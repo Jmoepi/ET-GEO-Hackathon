@@ -1,0 +1,51 @@
+---
+title: "VineMind AI — System Context Diagram (C4 Level 1)"
+---
+graph TB
+    subgraph External["External Systems"]
+        TC["TerraClim<br/>ET-GEO Data Pack<br/>(ETa, ETo, Kc, NDVI GeoTIFFs)"]
+        WX["OpenWeather API<br/>(Temperature, Rainfall,<br/>Humidity, Forecast)"]
+        AUTH["Authentication Provider<br/>(OAuth2 / Email+Password)"]
+    end
+
+    subgraph System["VineMind AI System"]
+        direction TB
+        FE["Web Dashboard<br/>(React + TypeScript<br/>Mapbox GL JS)"]
+        API["REST API<br/>(FastAPI<br/>Python 3.11+)"]
+        ENGINE["Decision Intelligence<br/>Engine<br/>(Water Stress Model +<br/>Recommendation Rules)"]
+        GEO["Geospatial<br/>Processing Pipeline<br/>(Rasterio + GeoPandas)"]
+        COPILOT["Explainable AI<br/>Copilot<br/>(LLM + RAG)"]
+        DB[("PostgreSQL<br/>+ PostGIS<br/>(Vineyard Blocks,<br/>Observations,<br/>Recommendations,<br/>Evidence)")]
+    end
+
+    subgraph Actors["People"]
+        VM["Vineyard Manager<br/>/ Irrigation Manager"]
+        VT["Viticulturist"]
+        FO["Farm Owner"]
+    end
+
+    VM -->|"Opens dashboard,<br/>reviews priorities,<br/>approves irrigation"| FE
+    VT -->|"Analyses trends,<br/>compares blocks"| FE
+    FO -->|"Views reports,<br/>water budgets"| FE
+
+    FE -->|"HTTPS<br/>REST + WebSocket"| API
+    API -->|"Query/Command"| ENGINE
+    API -->|"Fetch observations"| GEO
+    API -->|"Chat messages"| COPILOT
+    API -->|"CRUD + Spatial"| DB
+
+    ENGINE -->|"Read observations,<br/>write recommendations"| DB
+    GEO -->|"Read GeoTIFFs,<br/>write aggregations"| DB
+    COPILOT -->|"Read DEPs,<br/>generate explanations"| DB
+
+    TC -->|"Scheduled ingestion<br/>(GeoTIFF files)"| GEO
+    WX -->|"REST API<br/>(JSON)"| API
+    AUTH -->|"OAuth2 tokens"| API
+
+    classDef external fill:#E8EAF6,stroke:#3F51B5,color:#1A237E
+    classDef system fill:#E8F5E9,stroke:#388E3C,color:#1B5E20
+    classDef people fill:#FFF3E0,stroke:#F57C00,color:#E65100
+
+    class TC,WX,AUTH external
+    class FE,API,ENGINE,GEO,COPILOT,DB system
+    class VM,VT,FO people

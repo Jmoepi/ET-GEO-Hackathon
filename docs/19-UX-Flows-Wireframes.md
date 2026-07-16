@@ -1,0 +1,861 @@
+```
+Document ID:    VM-019
+Document:       UX Flows & Wireframes
+Project:        VineMind AI
+Version:        1.0
+Status:         Draft
+Author:         Jeffrey Moepi
+Hackathon:      TerraClim ET-GEO Hackathon 2026
+Last Updated:   16 July 2026
+```
+
+---
+
+# 19. UX Flows & Wireframes
+
+## 19.1 Introduction
+
+This document defines the user experience flows and wireframe specifications for VineMind AI. Each flow is presented as a Mermaid diagram and a corresponding wireframe layout.
+
+**Companion Files:** Detailed Mermaid flow diagrams are in `docs/diagrams/`:
+- `ux-authentication.mmd`
+- `ux-dashboard.mmd`
+- `ux-vineyard-explorer.mmd`
+- `ux-block-details.mmd`
+- `ux-decision-centre.mmd`
+- `ux-ai-copilot.mmd`
+- `ux-report-generation.mmd`
+
+---
+
+## 19.2 User Personas (Reference)
+
+| Persona | Role | Primary Need |
+|---------|------|-------------|
+| **Pieter** | Vineyard Manager | Daily irrigation priorities, quick decisions |
+| **Sarah** | Viticulturist | Historical trends, NDVI, growth-stage analysis |
+| **David** | Farm Owner | Executive overview, water budgets, weekly reports |
+
+---
+
+## 19.3 Core User Flows
+
+### 19.3.1 Authentication Flow
+
+**Trigger:** User opens application for the first time or session expired.
+
+```
+┌──────────┐
+│  Start   │
+│  (URL)   │
+└────┬─────┘
+     │
+     ▼
+┌──────────────────┐
+│ Application loads │
+│ Check for valid   │
+│ JWT in localStorage│
+└────┬─────────────┘
+     │
+     ├─── Valid JWT ──────────────────┐
+     │                                │
+     │                                ▼
+     │                    ┌──────────────────┐
+     │                    │ Redirect to       │
+     │                    │ Dashboard         │
+     │                    └──────────────────┘
+     │
+     └─── No JWT ─────────────────────┐
+                                       │
+                                       ▼
+                          ┌──────────────────┐
+                          │ Show Login Page   │
+                          │                   │
+                          │ [Email]           │
+                          │ [Password]        │
+                          │ [Sign In]         │
+                          │                   │
+                          │ "Or sign in with" │
+                          │ [Google] [GitHub] │
+                          └────────┬─────────┘
+                                   │
+                          ┌────────┴─────────┐
+                          │                   │
+                     ┌────┴────┐         ┌────┴────┐
+                     │ Success │         │ Failure │
+                     └────┬────┘         └────┬────┘
+                          │                   │
+                          ▼                   ▼
+                 ┌──────────────┐    ┌──────────────┐
+                 │ Store JWT    │    │ Show error   │
+                 │ Redirect to  │    │ "Invalid     │
+                 │ Dashboard    │    │  credentials"│
+                 └──────────────┘    │ Retry / Reset│
+                                     └──────────────┘
+```
+
+**Wireframe — Login Page:**
+```
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│                                                     │
+│              🌿 VineMind AI                         │
+│         Irrigation Intelligence Platform            │
+│                                                     │
+│     ┌─────────────────────────────────────┐         │
+│     │                                     │         │
+│     │  Email                              │         │
+│     │  ┌─────────────────────────────┐    │         │
+│     │  │ you@vineyard.co.za          │    │         │
+│     │  └─────────────────────────────┘    │         │
+│     │                                     │         │
+│     │  Password                           │         │
+│     │  ┌─────────────────────────────┐    │         │
+│     │  │ ••••••••                    │    │         │
+│     │  └─────────────────────────────┘    │         │
+│     │                                     │         │
+│     │  ┌─────────────────────────────┐    │         │
+│     │  │        Sign In              │    │         │
+│     │  └─────────────────────────────┘    │         │
+│     │                                     │         │
+│     │  ─── or continue with ───          │         │
+│     │                                     │         │
+│     │  [G Google]  [⌨ GitHub]            │         │
+│     │                                     │         │
+│     │  Don't have an account? Sign up    │         │
+│     └─────────────────────────────────────┘         │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+### 19.3.2 Dashboard Flow
+
+**Trigger:** User lands on Dashboard after login. This is the default home page.
+
+```
+┌──────────┐
+│  Start   │
+│(Dashboard)│
+└────┬─────┘
+     │
+     ▼
+┌──────────────────────────┐
+│ Load Dashboard            │
+│                           │
+│ 1. Fetch vineyard summary │
+│ 2. Fetch block statuses   │
+│ 3. Fetch recommendations  │
+│ 4. Fetch weather          │
+│ 5. Fetch active alerts    │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Display Overview Cards    │
+│                           │
+│ ┌─────┐ ┌─────┐ ┌─────┐ │
+│ │Health│ │Water│ │Alerts││
+│ │Score │ │Defic│ │Count ││
+│ └─────┘ └─────┘ └─────┘ │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Display Priority List     │
+│                           │
+│ Ranked blocks by stress:  │
+│ ● Block A  [74] Tonight  │
+│ ● Block C  [58] Monitor  │
+│ ● Block B  [32] No Action│
+└────────────┬─────────────┘
+             │
+     ┌───────┴───────┐
+     │               │
+     ▼               ▼
+┌─────────┐  ┌──────────────┐
+│ Click   │  │ Click Block  │
+│ Block   │  │ in Priority  │
+│ Card    │  │ List         │
+└────┬────┘  └──────┬───────┘
+     │              │
+     └──────┬───────┘
+            │
+            ▼
+     ┌──────────────┐
+     │ Navigate to   │
+     │ Block Details │
+     │ Page          │
+     └──────────────┘
+```
+
+**Wireframe — Dashboard:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Header: 🌿 VineMind AI  │ Dashboard    │ 🔔 3  │ 👤 Pieter│
+├──────┬──────────────────────────────────────────────────────┤
+│      │                                                      │
+│  📊  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │
+│ Dash │  │ Avg      │ │ Total    │ │ Active   │ │ Weather│ │
+│      │  │ Stress   │ │ Water    │ │ Alerts   │ │ 28°C   │ │
+│  🗺️  │  │ ● 52/100 │ │ Deficit  │ │ 2 blocks │ │ No Rain│ │
+│ Expl │  │ Moderate │ │ 12.4 mm  │ │ ⚠️ High  │ │ 3 days │ │
+│      │  └──────────┘ └──────────┘ └──────────┘ └────────┘ │
+│  🎯  │                                                      │
+│ Deci │  ┌──────────────────────────┐ ┌────────────────────┐ │
+│      │  │  Stress Trend (7 days)   │ │ Irrigation Priority│ │
+│  📈  │  │  ╭──╮                    │ │                    │ │
+│ Anal │  │ ╱    ╲  ╭──╮            │ │ ● Block A  [74]   │ │
+│      │  │╱      ╲╱    ╲           │ │   Irrigate Tonight │ │
+│  📄  │  │        52→58→48          │ │   [View] [Approve]│ │
+│ Repo │  └──────────────────────────┘ │                    │ │
+│      │                               │ ● Block C  [58]   │ │
+│  🤖  │                               │   Delay Irrigation │ │
+│ Copi │                               │   [View] [Approve]│ │
+│      │                               │                    │ │
+│      │                               │ ● Block B  [32]   │ │
+│      │                               │   No Action Needed │ │
+│      │                               │   [View]           │ │
+│      │                               └────────────────────┘ │
+├──────┴──────────────────────────────────────────────────────┤
+│ Footer: © VineMind AI  │  v1.0.0  │  Data fresh: 2h ago    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 19.3.3 Vineyard Explorer (Map) Flow
+
+**Trigger:** User clicks "Explorer" in sidebar or map thumbnail on dashboard.
+
+```
+┌──────────┐
+│  Start   │
+│(Explorer)│
+└────┬─────┘
+     │
+     ▼
+┌──────────────────────────┐
+│ Initialise Map            │
+│                           │
+│ 1. Load Mapbox GL JS     │
+│ 2. Set viewport to       │
+│    vineyard centre       │
+│ 3. Fetch block polygons  │
+│ 4. Fetch latest stress   │
+│    scores per block      │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Render Block Polygons     │
+│                           │
+│ Colour-coded by stress:   │
+│ 🟢 Healthy (0-20)        │
+│ 🟡 Monitor (21-40)       │
+│ 🟠 Moderate (41-60)      │
+│ 🔴 High (61-80)          │
+│ 🔴 Critical (81-100)     │
+│ ⚪ No Data               │
+└────────────┬─────────────┘
+             │
+     ┌───────┴───────────────┐
+     │                       │
+     ▼                       ▼
+┌──────────────┐    ┌──────────────┐
+│ Hover Block  │    │ Click Block  │
+│              │    │              │
+│ Show Tooltip:│    │ Show Side    │
+│ "Block A"    │    │ Panel:       │
+│ "Score: 74"  │    │              │
+│ "Critical"   │    │ Full block   │
+│              │    │ details with │
+│ [Brief info] │    │ recommendation│
+└──────────────┘    └──────┬───────┘
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+              ▼                         ▼
+     ┌──────────────┐         ┌──────────────┐
+     │ Click        │         │ Toggle Layer │
+     │ "View Full"  │         │ Control      │
+     │              │         │              │
+     │ Navigate to  │         │ Switch:      │
+     │ Block Details│         │ • Stress     │
+     │ Page         │         │ • Satellite  │
+     └──────────────┘         │ • NDVI       │
+                              │ • Basemap    │
+                              └──────────────┘
+```
+
+**Wireframe — Vineyard Explorer:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Header                                                      │
+├──────┬──────────────────────────────────────────────────────┤
+│      │ ┌──────────────────────────────────────────────────┐ │
+│  📊  │ │                                                  │ │
+│      │ │              🗺️  MAP AREA                        │ │
+│  🗺️  │ │                                                  │ │
+│  ◉   │ │    ┌──────────┐                                  │ │
+│      │ │    │ Block A  │  ┌──────────┐                    │ │
+│  🎯  │ │    │ 🔴 74    │  │ Block C  │                    │ │
+│      │ │    └──────────┘  │ 🟠 58    │                    │ │
+│  📈  │ │                  └──────────┘                    │ │
+│      │ │         ┌──────────┐                             │ │
+│  📄  │ │         │ Block B  │                             │ │
+│      │ │         │ 🟡 32    │                             │ │
+│  🤖  │ │         └──────────┘                             │ │
+│      │ │                                                  │ │
+│      │ │  ┌─────────────────┐  ┌───────────────────────┐  │ │
+│      │ │  │ LAYERS          │  │ ┌───────────────────┐ │  │ │
+│      │ │  │ ☑ Stress Overlay│  │ │ Block A           │ │  │ │
+│      │ │  │ ☑ Block Borders │  │ │ ● 74/100 Critical │ │  │ │
+│      │ │  │ ☐ Satellite     │  │ │ Irrigate Tonight  │ │  │ │
+│      │ │  │ ☐ NDVI          │  │ │ [View Details]    │ │  │ │
+│      │ │  └─────────────────┘  │ └───────────────────┘ │  │ │
+│      │ │                       └───────────────────────┘  │ │
+│      │ └──────────────────────────────────────────────────┘ │
+├──────┴──────────────────────────────────────────────────────┤
+│ Footer                                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 19.3.4 Block Details (Decision Evidence) Flow
+
+**Trigger:** User clicks a block from map, dashboard, or priority list.
+
+```
+┌──────────┐
+│  Start   │
+│ (Block   │
+│  Details)│
+└────┬─────┘
+     │
+     ▼
+┌──────────────────────────┐
+│ Fetch Block Data          │
+│                           │
+│ 1. Block metadata         │
+│ 2. Latest observation     │
+│ 3. Current stress score   │
+│ 4. Current recommendation │
+│ 5. Decision Evidence Pkg  │
+│ 6. Historical observations│
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Display Block Overview    │
+│                           │
+│ Block Name + Cultivar     │
+│ Area: 12.5 ha             │
+│ Phenology: Veraison       │
+│ Stress: ● 74/100 (High)  │
+└────────────┬─────────────┘
+             │
+     ┌───────┴───────────────┐
+     │                       │
+     ▼                       ▼
+┌──────────────┐    ┌──────────────┐
+│ View         │    │ View         │
+│ Observation  │    │ Evidence     │
+│ Metrics      │    │ Panel        │
+│              │    │              │
+│ • ETa: 3.2mm │    │ Water Deficit│
+│ • ETo: 4.8mm │    │ 4.2mm (30%) │
+│ • NDVI: 0.72 │    │              │
+│ • Soil: 42%  │    │ ET Ratio     │
+│ • Rain: 0mm  │    │ 0.82 (20%)  │
+│              │    │              │
+│ [Charts]     │    │ Soil Moisture│
+│              │    │ 0.61 (20%)  │
+│              │    │              │
+│              │    │ NDVI Trend   │
+│              │    │ -0.08 (15%) │
+│              │    │              │
+│              │    │ Rainfall     │
+│              │    │ 0mm (10%)   │
+│              │    │              │
+│              │    │ Phenology    │
+│              │    │ Veraison (5%)│
+└──────────────┘    └──────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Decision Summary          │
+│                           │
+│ Recommendation:           │
+│ "Irrigate Tonight"        │
+│                           │
+│ Explanation:              │
+│ "Block A shows high water │
+│ stress due to significant │
+│ water deficit of 4.2mm,   │
+│ declining NDVI trend,     │
+│ below-average soil        │
+│ moisture, no rainfall     │
+│ expected, and veraison    │
+│ stage which is highly     │
+│ sensitive to water stress."│
+│                           │
+│ Confidence: 87% (High)    │
+│ Model: WSM-1.0            │
+│                           │
+│ [Approve] [Dismiss] [Ask  │
+│           Copilot Why]    │
+└──────────────────────────┘
+```
+
+**Wireframe — Block Details:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Header                                                      │
+├──────┬──────────────────────────────────────────────────────┤
+│      │                                                      │
+│  📊  │  ◀ Back to Explorer  │  Block A — Merlot            │
+│      │                                                      │
+│  🗺️  │  ┌────────────────────────────┐ ┌──────────────────┐│
+│      │  │  OBSERVATION DATA           │ │ DECISION EVIDENCE││
+│  🎯  │  │                             │ │                  ││
+│      │  │  ETa    3.2 mm   ▼ -8%     │ │ Water Deficit    ││
+│  📈  │  │  ETo    4.8 mm   ─ stable  │ │ ████████░░ 4.2mm ││
+│      │  │  Kc     0.67     ▲ +2%     │ │ Weight: 30%      ││
+│  📄  │  │  NDVI   0.72     ▼ -0.08   │ │                  ││
+│      │  │  Soil   42%      ▼ -5%     │ │ ET Ratio         ││
+│  🤖  │  │  Rain   0.0 mm   ─ none    │ │ ███████░░░ 0.82  ││
+│      │  │                             │ │ Weight: 20%      ││
+│      │  │  ┌────────────────────────┐ │ │                  ││
+│      │  │  │  ETa vs ETo (7 days)   │ │ │ Soil Moisture    ││
+│      │  │  │  📈 line chart          │ │ │ ██████░░░░ 0.61  ││
+│      │  │  └────────────────────────┘ │ │ Weight: 20%      ││
+│      │  │                             │ │                  ││
+│      │  │  ┌────────────────────────┐ │ │ NDVI Trend       ││
+│      │  │  │  NDVI Trend (30 days)  │ │ │ ███████░░░ -0.08 ││
+│      │  │  │  📈 line chart          │ │ │ Weight: 15%      ││
+│      │  │  └────────────────────────┘ │ │                  ││
+│      │  └────────────────────────────┘ │ Rain Forecast     ││
+│      │                                  │ █████████░ 0mm   ││
+│      │  ┌────────────────────────────┐ │ Weight: 10%      ││
+│      │  │  RECOMMENDATION             │ │                  ││
+│      │  │                             │ │ Phenology        ││
+│      │  │  ┌─────────────────────┐   │ │ █████████░ Vera. ││
+│      │  │  │ 🔴 IRRIGATE TONIGHT │   │ │ Weight: 5%       ││
+│      │  │  │ Priority: #1 of 8   │   │ │                  ││
+│      │  │  │ Volume: 4,500 L     │   │ │ Total: 74/100    ││
+│      │  │  │ Confidence: 87%     │   │ │ Confidence: 87%  ││
+│      │  │  └─────────────────────┘   │ │                  ││
+│      │  │                             │ │ [Full DEP JSON]  ││
+│      │  │  "Block A shows high water  │ └──────────────────┘│
+│      │  │  stress due to significant  │                     │
+│      │  │  water deficit of 4.2mm..." │                     │
+│      │  │                             │                     │
+│      │  │  [Approve] [Dismiss] [Ask]  │                     │
+│      │  └────────────────────────────┘                     │
+├──────┴──────────────────────────────────────────────────────┤
+│ Footer                                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 19.3.5 Decision Centre Flow
+
+**Trigger:** User clicks "Decisions" in sidebar. Shows all blocks ranked by irrigation urgency.
+
+```
+┌──────────┐
+│  Start   │
+│(Decision │
+│ Centre)  │
+└────┬─────┘
+     │
+     ▼
+┌──────────────────────────┐
+│ Fetch All Recommendations │
+│                           │
+│ GET /api/v1/recommendations│
+│ ?status=pending           │
+│ &sort=priority            │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Display Irrigation Queue  │
+│                           │
+│ Today: 2 blocks need     │
+│ irrigation                │
+│                           │
+│ Tomorrow: 1 block needs  │
+│ monitoring                │
+│                           │
+│ No action: 5 blocks      │
+└────────────┬─────────────┘
+             │
+     ┌───────┴───────────────┐
+     │                       │
+     ▼                       ▼
+┌──────────────┐    ┌──────────────┐
+│ Click Block  │    │ Click        │
+│ in Queue     │    │ "Approve"    │
+│              │    │ on Block     │
+│ Show full    │    │              │
+│ detail panel │    │ Confirm:     │
+│              │    │ "Approve     │
+│ Navigate to  │    │  irrigation  │
+│ Block Details│    │  for Block A?"│
+│              │    │              │
+└──────────────┘    │ [Confirm]    │
+                    │ [Cancel]     │
+                    └──────┬───────┘
+                           │
+                    ┌──────┴───────┐
+                    │              │
+                    ▼              ▼
+           ┌──────────────┐ ┌──────────────┐
+           │ Confirmed    │ │ Cancelled    │
+           │              │ │              │
+           │ Status →     │ │ No change    │
+           │ "accepted"   │ │              │
+           │              │ │              │
+           │ Audit logged │ │              │
+           │              │ │              │
+           │ Remove from  │ │              │
+           │ queue        │ │              │
+           └──────────────┘ └──────────────┘
+```
+
+**Wireframe — Decision Centre:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Header                                                      │
+├──────┬──────────────────────────────────────────────────────┤
+│      │                                                      │
+│  📊  │  Decision Centre                                     │
+│      │  Today: 16 July 2026                                 │
+│  🗺️  │                                                      │
+│      │  ┌────────────────────────────────────────────────┐  │
+│  🎯  │  │ 🔴 IRRIGATE TODAY (2 blocks)                   │  │
+│  ◉   │  │                                                │  │
+│      │  │  ┌──────────────────────────────────────────┐  │  │
+│  📈  │  │  │ ● Block A           [74/100]  Priority #1│  │  │
+│      │  │  │   Irrigate Tonight  │ 4,500 L │ 87% conf │  │  │
+│  📄  │  │  │   Water deficit 4.2mm, declining NDVI    │  │  │
+│      │  │  │   [View Details]  [Approve]  [Dismiss]   │  │  │
+│  🤖  │  │  └──────────────────────────────────────────┘  │  │
+│      │  │                                                │  │
+│      │  │  ┌──────────────────────────────────────────┐  │  │
+│      │  │  │ ● Block D           [68/100]  Priority #2│  │  │
+│      │  │  │   Irrigate Tonight  │ 3,200 L │ 82% conf │  │  │
+│      │  │  │   [View Details]  [Approve]  [Dismiss]   │  │  │
+│      │  │  └──────────────────────────────────────────┘  │  │
+│      │  └────────────────────────────────────────────────┘  │
+│      │                                                      │
+│      │  ┌────────────────────────────────────────────────┐  │
+│      │  │ 🟡 MONITOR TOMORROW (1 block)                  │  │
+│      │  │                                                │  │
+│      │  │  ┌──────────────────────────────────────────┐  │  │
+│      │  │  │ ● Block C           [58/100]  Priority #3│  │  │
+│      │  │  │   Delay Irrigation  │ 2,800 L │ 79% conf │  │  │
+│      │  │  │   [View Details]                        │  │  │
+│      │  │  └──────────────────────────────────────────┘  │  │
+│      │  └────────────────────────────────────────────────┘  │
+│      │                                                      │
+│      │  ┌────────────────────────────────────────────────┐  │
+│      │  │ 🟢 NO ACTION (5 blocks)                        │  │
+│      │  │   Block B [32]  Block E [28]  Block F [18]    │  │
+│      │  │   Block G [15]  Block H [8]                   │  │
+│      │  └────────────────────────────────────────────────┘  │
+├──────┴──────────────────────────────────────────────────────┤
+│ Footer                                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 19.3.6 AI Copilot Flow
+
+**Trigger:** User clicks "Copilot" in sidebar or "Ask Copilot" on any recommendation.
+
+```
+┌──────────┐
+│  Start   │
+│ (Copilot)│
+└────┬─────┘
+     │
+     ▼
+┌──────────────────────────┐
+│ Open Chat Panel           │
+│                           │
+│ Load conversation history │
+│ from localStorage         │
+│                           │
+│ Show greeting:            │
+│ "Good morning, Pieter.   │
+│  Block A needs attention  │
+│  today. How can I help?"  │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ User Types Question       │
+│                           │
+│ Example questions:        │
+│ • "Why is Block A stressed│
+│    more than Block B?"    │
+│ • "What happens if it     │
+│    rains tomorrow?"       │
+│ • "Summarise this week"   │
+│ • "Compare all blocks"    │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Process Request           │
+│                           │
+│ 1. Classify intent        │
+│ 2. Extract entities       │
+│ 3. Retrieve relevant DEPs │
+│ 4. Build context          │
+│ 5. Generate LLM prompt    │
+│ 6. Generate response      │
+│ 7. Validate response      │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Display Response           │
+│                           │
+│ Show evidence cards       │
+│ Show confidence           │
+│ Show sources              │
+│                           │
+│ Suggested follow-ups:     │
+│ • "Show me the evidence"  │
+│ • "Compare with Block C"  │
+│ • "What's the forecast?"  │
+└────────────┬─────────────┘
+             │
+     ┌───────┴───────┐
+     │               │
+     ▼               ▼
+┌─────────┐   ┌─────────┐
+│ Follow  │   │ Close   │
+│ up     │   │ Panel   │
+│ question│   │         │
+└────┬────┘   └─────────┘
+     │
+     ▼
+┌──────────────────┐
+│ Continue cycle   │
+│ with new context │
+└──────────────────┘
+```
+
+**Wireframe — AI Copilot Panel:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Header                                                      │
+├──────┬──────────────────────────────────────────────────────┤
+│      │                                                      │
+│  📊  │  ┌──────────────────────────────┐ ┌────────────────┐│
+│      │  │  Dashboard Content            │ │ 🤖 AI Copilot  ││
+│  🗺️  │  │                               │ │                ││
+│      │  │  (or any page the user is on) │ │ ────────────── ││
+│  🎯  │  │                               │ │                ││
+│      │  │                               │ │ 🌤 Good morning││
+│  📈  │  │                               │ │ Pieter. Block  ││
+│      │  │                               │ │ A needs         ││
+│  📄  │  │                               │ │ attention today.││
+│      │  │                               │ │ How can I help?││
+│  🤖  │  │                               │ │                ││
+│  ◉   │  │                               │ │ ────────────── ││
+│      │  │                               │ │                ││
+│      │  │                               │ │ 👤 Why is Block││
+│      │  │                               │ │ A stressed more││
+│      │  │                               │ │ than Block B?  ││
+│      │  │                               │ │                ││
+│      │  │                               │ │ ────────────── ││
+│      │  │                               │ │                ││
+│      │  │                               │ │ 🤖 Block A     ││
+│      │  │                               │ │ (Score 74) has ││
+│      │  │                               │ │ higher stress  ││
+│      │  │                               │ │ than Block B   ││
+│      │  │                               │ │ (Score 32) due ││
+│      │  │                               │ │ to:            ││
+│      │  │                               │ │                ││
+│      │  │                               │ │ ┌────────────┐ ││
+│      │  │                               │ │ │ Evidence:  │ ││
+│      │  │                               │ │ │ Deficit    │ ││
+│      │  │                               │ │ │ 4.2mm vs   │ ││
+│      │  │                               │ │ │ 1.1mm      │ ││
+│      │  │                               │ │ │ NDVI       │ ││
+│      │  │                               │ │ │ declining  │ ││
+│      │  │                               │ │ │ vs stable  │ ││
+│      │  │                               │ │ └────────────┘ ││
+│      │  │                               │ │                ││
+│      │  │                               │ │ Confidence: 92%││
+│      │  │                               │ │                ││
+│      │  │                               │ │ 💬 What if it  ││
+│      │  │                               │ │ rains tomorrow?││
+│      │  │                               │ └────────────────┘│
+│      │  └──────────────────────────────┘                    │
+├──────┴──────────────────────────────────────────────────────┤
+│ Footer                                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 19.3.7 Report Generation Flow
+
+**Trigger:** User clicks "Reports" in sidebar or "Export" on any view.
+
+```
+┌──────────┐
+│  Start   │
+│ (Reports)│
+└────┬─────┘
+     │
+     ▼
+┌──────────────────────────┐
+│ Show Report Builder       │
+│                           │
+│ Select:                   │
+│ • Report type             │
+│ • Date range              │
+│ • Blocks to include       │
+│ • Format (PDF / CSV)      │
+│ • Sections to include     │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Generate Preview          │
+│                           │
+│ Show sample sections:     │
+│ • Executive summary       │
+│ • Block health overview   │
+│ • Irrigation history      │
+│ • Stress trend charts     │
+│ • Water budget            │
+│ • Recommendations log     │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ User Confirms             │
+│                           │
+│ [Generate Report]         │
+└────────────┬─────────────┘
+             │
+     ┌───────┴───────┐
+     │               │
+     ▼               ▼
+┌─────────┐   ┌─────────┐
+│ Success │   │ Failure │
+│         │   │         │
+│ Download│   │ "Report │
+│ PDF /   │   │  gen.   │
+│ CSV     │   │  failed"│
+│         │   │ Retry   │
+└─────────┘   └─────────┘
+```
+
+**Wireframe — Reports Page:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Header                                                      │
+├──────┬──────────────────────────────────────────────────────┤
+│      │                                                      │
+│  📊  │  Reports                                             │
+│      │                                                      │
+│  🗺️  │  ┌────────────────────────────────────────────────┐  │
+│      │  │  REPORT BUILDER                                 │  │
+│  🎯  │  │                                                 │  │
+│      │  │  Report Type:  [Weekly Summary ▼]              │  │
+│  📈  │  │  Date Range:   [Last 7 days ▼]                 │  │
+│      │  │  Blocks:       [All Blocks ▼]                   │  │
+│  📄  │  │  Format:       (● PDF)  (○ CSV)                 │  │
+│  ◉   │  │                                                 │  │
+│      │  │  Sections:                                      │  │
+│  🤖  │  │  ☑ Executive Summary                            │  │
+│      │  │  ☑ Block Health Overview                        │  │
+│      │  │  ☑ Irrigation History                           │  │
+│      │  │  ☑ Stress Trend Charts                          │  │
+│      │  │  ☑ Water Budget                                 │  │
+│      │  │  ☐ Raw Data Export                              │  │
+│      │  │                                                 │  │
+│      │  │  ┌─────────────────────────────────────────┐    │  │
+│      │  │  │           PREVIEW                        │    │  │
+│      │  │  │                                         │    │  │
+│      │  │  │  📄 VineMind AI — Weekly Report          │    │  │
+│      │  │  │  Week of 10–16 July 2026                │    │  │
+│      │  │  │                                         │    │  │
+│      │  │  │  Executive Summary:                     │    │  │
+│      │  │  │  • 8 blocks monitored                   │    │  │
+│      │  │  │  • 3 irrigation events approved         │    │  │
+│      │  │  │  • 12,400 L total water used            │    │  │
+│      │  │  │  • Average stress: 48/100 (Moderate)    │    │  │
+│      │  │  │                                         │    │  │
+│      │  │  │  [Preview full report]                  │    │  │
+│      │  │  └─────────────────────────────────────────┘    │  │
+│      │  │                                                 │  │
+│      │  │  [Generate & Download]                          │  │
+│      │  └────────────────────────────────────────────────┘  │
+├──────┴──────────────────────────────────────────────────────┤
+│ Footer                                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 19.4 Global Patterns
+
+### 19.4.1 Loading States
+
+| Pattern | When Used |
+|---------|-----------|
+| Skeleton screens | Initial page load, data fetching |
+| Spinner | Button actions, form submissions |
+| Progress bar | Report generation, data processing |
+| Shimmer | Map tiles loading |
+
+### 19.4.2 Empty States
+
+| State | Message | Action |
+|-------|---------|--------|
+| No vineyards | "No vineyards yet. Add your first vineyard to get started." | [Add Vineyard] |
+| No blocks | "No blocks defined. Upload a shapefile or draw boundaries on the map." | [Upload / Draw] |
+| No recommendations | "All blocks are healthy. No irrigation needed today." | [View All Blocks] |
+| No search results | "No blocks match your search. Try different terms." | [Clear Search] |
+
+### 19.4.3 Error States
+
+| State | Message | Action |
+|-------|---------|--------|
+| API error | "Something went wrong. Please try again." | [Retry] |
+| Network offline | "You're offline. Some data may be outdated." | [Retry when online] |
+| Data stale | "Data is older than 48 hours. Recommendations may be outdated." | [Refresh Data] |
+
+### 19.4.4 Toast Notifications
+
+| Type | Example | Duration |
+|------|---------|----------|
+| Success | "Irrigation approved for Block A" | 3s |
+| Error | "Failed to load weather data" | 5s |
+| Warning | "Data for Block C is 3 days old" | 4s |
+| Info | "New recommendations available" | 3s |
+
+---
+
+## 19.5 Responsive Behaviour
+
+| Breakpoint | Sidebar | Map | Cards | Copilot |
+|------------|---------|-----|-------|---------|
+| Desktop (>1024px) | Visible, 240px | Full area | 2-3 column grid | Side panel, 400px |
+| Tablet (768-1024px) | Collapsed, 64px icons | Full area | 1-2 column grid | Overlay panel |
+| Mobile (<768px) | Hidden, hamburger menu | Full screen | Single column | Full screen overlay |

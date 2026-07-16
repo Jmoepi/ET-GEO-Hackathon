@@ -1,0 +1,50 @@
+---
+title: "VineMind AI — Recommendation Request Sequence Diagram"
+---
+sequenceDiagram
+    autonumber
+    actor User as Vineyard Manager
+    participant FE as React Dashboard
+    participant API as FastAPI REST API
+    participant DE as Decision Intelligence<br/>Engine
+    participant WSM as Water Stress<br/>Model
+    participant DB as PostgreSQL<br/>+ PostGIS
+
+    User->>FE: Opens Dashboard
+    FE->>API: GET /api/v1/recommendations
+    API->>DB: Query latest recommendations
+    DB-->>API: Return recommendations list
+    API-->>FE: 200 OK (recommendations)
+    FE-->>User: Display priority list<br/>(Irrigate Immediately → No Action)
+
+    User->>FE: Clicks on Block A
+    FE->>API: GET /api/v1/blocks/{blockA}
+    API->>DB: Query block details + latest observation
+    DB-->>API: Return block data
+    API-->>FE: 200 OK (block details)
+    FE-->>User: Display block overview<br/>(ETa, ETo, NDVI, Stress Score)
+
+    User->>FE: Clicks "Why this recommendation?"
+    FE->>API: GET /api/v1/evidence/{blockA}
+    API->>DB: Query Decision Evidence Package
+    DB-->>API: Return DEP (stress_score,<br/>contributors, confidence, rules)
+    API-->>FE: 200 OK (DEP)
+    FE-->>User: Display explanation:<br/>"Irrigate Tonight — Stress Score 74/100<br/>Water deficit 4.2mm, declining NDVI,<br/>no rain forecast, veraison stage"
+
+    User->>FE: Opens AI Copilot
+    FE->>API: POST /api/v1/copilot/chat
+    Note over API: "Compare Block A and Block B"
+    API->>DE: Retrieve DEPs for both blocks
+    DE->>DB: Query observations + evidence
+    DB-->>DE: Return data
+    DE-->>API: Structured context
+    API->>API: Build RAG context + LLM prompt
+    API-->>FE: 200 OK (explanation)
+    FE-->>User: "Block A (Score 74) needs attention<br/>before Block B (Score 45).<br/>Block A has higher water deficit<br/>and is at veraison..."
+
+    User->>FE: Approves irrigation for Block A
+    FE->>API: POST /api/v1/recommendations/{id}/accept
+    API->>DB: Update recommendation status
+    DB-->>API: Confirmed
+    API-->>FE: 200 OK (accepted)
+    FE-->>User: "Irrigation approved for Block A"<br/>+ audit trail logged

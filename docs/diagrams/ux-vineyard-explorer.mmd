@@ -1,0 +1,55 @@
+---
+title: "VineMind AI — Vineyard Explorer (Map) Flow"
+---
+flowchart TB
+    Start(["User clicks Explorer"]) --> InitMap["Initialise Map<br/>(Mapbox GL JS)"]
+    
+    InitMap --> LoadBlocks["Fetch block polygons<br/>GET /blocks"]
+    LoadBlocks --> LoadStress["Fetch latest stress<br/>GET /stress/latest"]
+    
+    LoadBlocks --> RenderPolygons["Render block polygons<br/>with stress colours"]
+    LoadStress --> RenderPolygons
+    
+    RenderPolygons --> MapReady["Map fully loaded<br/>with all blocks visible"]
+    
+    MapReady --> UserAction{"User Interaction"}
+    
+    UserAction -->|"Hover block"| Hover["Show tooltip:<br/>Block name<br/>Stress score<br/>Category"]
+    Hover --> UserAction
+    
+    UserAction -->|"Click block"| ClickBlock["Show side panel:<br/>Block overview<br/>Quick recommendation<br/>[View Details] button"]
+    
+    UserAction -->|"Toggle layer"| LayerPanel["Show/hide layers:<br/>☑ Stress Overlay<br/>☑ Block Borders<br/>☐ Satellite<br/>☐ NDVI"]
+    LayerPanel --> RenderPolygons
+    
+    UserAction -->|"Zoom/Pan"| MapNav["Map viewport<br/>updates"]
+    MapNav --> UserAction
+    
+    UserAction -->|"Click 'View Details'"| NavigateDetails["Navigate to<br/>Block Details Page"]
+    
+    UserAction -->|"Click 'Approve'<br/>on side panel"| QuickApprove["Open confirmation<br/>dialog"]
+    QuickApprove --> ApproveConfirm{"Confirmed?"}
+    ApproveConfirm -->|"Yes"| ApproveAPI["POST /recommendations<br/>/{id}/accept"]
+    ApproveAPI --> RefreshMap["Refresh map data"]
+    RefreshMap --> MapReady
+    ApproveConfirm -->|"No"| ClickBlock
+    
+    UserAction -->|"Click 'Ask Copilot<br/>about this block'"| OpenCopilot["Open AI Copilot<br/>with block context"]
+    
+    UserAction -->|"Search blocks"| Search["Search input<br/>Filter by name/cultivar"]
+    Search --> FilterBlocks["Filter visible blocks<br/>on map"]
+    FilterBlocks --> MapReady
+
+    classDef start fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef init fill:#ECEFF1,stroke:#546E7A,color:#263238
+    classDef render fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef interaction fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+    classDef decision fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef navigate fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+
+    class Start start
+    class InitMap,LoadBlocks,LoadStress init
+    class RenderPolygons,MapReady,RefreshMap render
+    class Hover,ClickBlock,LayerPanel,MapNav,Search,FilterBlocks interaction
+    class UserAction,ApproveConfirm decision
+    class NavigateDetails,OpenCopilot navigate

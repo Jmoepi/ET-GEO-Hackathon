@@ -1,0 +1,122 @@
+---
+title: "VineMind AI — Data Lineage Diagram"
+---
+flowchart TB
+    subgraph Raw["Level 1 — Raw Data (Immutable)"]
+        R1["ETa GeoTIFF<br/>(TerraClim)"]
+        R2["ETo GeoTIFF<br/>(TerraClim)"]
+        R3["Kc GeoTIFF<br/>(TerraClim)"]
+        R4["NDVI GeoTIFF<br/>(Sentinel-2)"]
+        R5["Vineyard Blocks<br/>(Shapefile)"]
+        R6["Phenology<br/>(CSV/Excel)"]
+        R7["Soil Moisture<br/>(CSV/Raster)"]
+        R8["Weather<br/>(OpenWeather API)"]
+    end
+
+    subgraph Import["Import Metadata"]
+        M1["Source File"]
+        M2["Import Timestamp"]
+        M3["CRS"]
+        M4["Resolution"]
+        M5["Checksum (SHA-256)"]
+        M6["Imported By"]
+    end
+
+    subgraph Processed["Level 2 — Processed Data"]
+        P1["Mean ETa<br/>per Block per Day"]
+        P2["Mean ETo<br/>per Block per Day"]
+        P3["Mean Kc<br/>per Block per Day"]
+        P4["Mean NDVI<br/>per Block per Day"]
+        P5["Soil Moisture<br/>per Block per Day"]
+        P6["Phenology Stage<br/>per Block per Day"]
+    end
+
+    subgraph Derived["Level 3 — Analytical Data"]
+        D1["Water Deficit<br/>(ETo − ETa)"]
+        D2["ET Ratio<br/>(ETa / ETo)"]
+        D3["NDVI Trend<br/>(Current − Previous)"]
+        D4["Soil Moisture<br/>Index"]
+        D5["Water Stress<br/>Score (0–100)"]
+        D6["Stress Category"]
+        D7["Confidence<br/>Score"]
+    end
+
+    subgraph Decision["Level 4 — Decision Data"]
+        DC1["Recommendation<br/>(Action Type)"]
+        DC2["Priority<br/>Ranking"]
+        DC3["Explanation<br/>(Natural Language)"]
+        DC4["Decision Evidence<br/>Package (DEP)"]
+        DC5["Model Version"]
+    end
+
+    subgraph Presentation["Level 5 — Presentation"]
+        PV1["Dashboard<br/>Widgets"]
+        PV2["Map<br/>Overlays"]
+        PV3["AI Copilot<br/>Explanations"]
+        PV4["PDF<br/>Reports"]
+        PV5["CSV<br/>Exports"]
+    end
+
+    subgraph Audit["Audit Trail"]
+        AU1["Who imported raw data"]
+        AU2["When processed"]
+        AU3["Which model version"]
+        AU4["Which rules triggered"]
+        AU5["User decisions logged"]
+    end
+
+    R1 & R2 & R3 & R4 & R5 & R6 & R7 & R8 --> M1
+    M1 & M2 & M3 & M4 & M5 & M6 -.->|"Attached to every record"| P1
+
+    R1 --> P1
+    R2 --> P2
+    R3 --> P3
+    R4 --> P4
+    R7 --> P5
+    R6 --> P6
+    R8 --> P5
+
+    P1 --> D1
+    P2 --> D1
+    P2 --> D2
+    P1 --> D2
+    P4 --> D3
+    P5 --> D4
+
+    D1 & D2 & D3 & D4 & R8 & P6 --> D5
+    D5 --> D6
+    D5 --> D7
+
+    D5 & D6 & D7 --> DC1
+    D5 & D6 --> DC2
+    DC1 & DC2 --> DC3
+    DC1 & DC2 & D7 & D5 & D1 & D2 & D3 & D4 & P6 --> DC4
+    DC5 --> DC4
+
+    DC1 --> PV1
+    DC2 --> PV2
+    DC3 --> PV3
+    DC4 --> PV4
+    DC1 --> PV5
+
+    AU1 -.-> R1
+    AU2 -.-> P1
+    AU3 -.-> DC5
+    AU4 -.-> DC4
+    AU5 -.-> DC1
+
+    classDef raw fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef import fill:#ECEFF1,stroke:#546E7A,color:#263238
+    classDef processed fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    classDef derived fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+    classDef decision fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef presentation fill:#E0F2F1,stroke:#00796B,color:#004D40
+    classDef audit fill:#FCE4EC,stroke:#C62828,color:#B71C1C
+
+    class R1,R2,R3,R4,R5,R6,R7,R8 raw
+    class M1,M2,M3,M4,M5,M6 import
+    class P1,P2,P3,P4,P5,P6 processed
+    class D1,D2,D3,D4,D5,D6,D7 derived
+    class DC1,DC2,DC3,DC4,DC5 decision
+    class PV1,PV2,PV3,PV4,PV5 presentation
+    class AU1,AU2,AU3,AU4,AU5 audit

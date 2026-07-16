@@ -1,0 +1,54 @@
+---
+title: "VineMind AI — Report Generation Flow"
+---
+flowchart TB
+    Start(["User clicks Reports"]) --> ShowBuilder["Show Report Builder<br/><br/>Report Type selector<br/>Date range selector<br/>Block selector<br/>Format selector<br/>Section checkboxes"]
+    
+    ShowBuilder --> UserConfig["User configures:<br/>• Type: Weekly Summary<br/>• Range: Last 7 days<br/>• Blocks: All<br/>• Format: PDF<br/>• Sections: ☑☑☑☑☑"]
+    
+    UserConfig --> Preview["Generate Preview<br/><br/>Fetch summary stats<br/>Show sample sections<br/>Estimate file size"]
+    
+    Preview --> ShowPreview["Display Preview<br/><br/>📄 Executive Summary<br/>• 8 blocks monitored<br/>• 3 irrigation events<br/>• 12,400 L water used<br/><br/>[Preview full report]"]
+    
+    ShowPreview --> UserAction{"User Action"}
+    
+    UserAction -->|"Click 'Generate<br/>& Download'"| Generate["POST /reports<br/><br/>{type, date_range,<br/>blocks, format,<br/>sections}"]
+    
+    Generate --> Processing["Report Generation<br/>(background job)<br/><br/>Progress indicator:<br/>█░░░░░░░ 12%"]
+    
+    Processing --> ProgressUpdate["Update progress<br/>every 2 seconds"]
+    ProgressUpdate --> Processing
+    
+    Processing -->|"Complete"| ReportReady["Report Ready<br/>GET /reports/{id}/download"]
+    
+    ReportReady --> Download["Trigger browser<br/>download<br/><br/>📄 vinemind-report-<br/>2026-07-16.pdf"]
+    
+    Download --> LogAudit["Log to audit trail<br/>(user, report type,<br/>blocks, timestamp)"]
+    LogAudit --> ShowSuccess["Show toast:<br/>'Report downloaded<br/>successfully'"]
+    ShowSuccess --> RecentReports["Add to recent<br/>reports list"]
+    
+    Processing -->|"Failed"| ReportError["Show error:<br/>'Report generation<br/>failed. Please try again.'"]
+    ReportError --> UserAction
+    
+    UserAction -->|"Click 'View<br/>Recent Reports'"| ShowRecent["Show Recent Reports<br/><br/>• Weekly Summary<br/>  2026-07-16  [Download]<br/>• Monthly Report<br/>  2026-06-30  [Download]"]
+    
+    UserAction -->|"Click 'Preview<br/>Full Report'"| FullPreview["Open full report<br/>preview in new tab<br/>(HTML render)"]
+    
+    UserAction -->|"Change format<br/>to CSV"| FormatCSV["Show CSV-specific<br/>options:<br/>• Delimiter<br/>• Encoding<br/>• Include headers"]
+    FormatCSV --> ShowBuilder
+
+    classDef start fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef builder fill:#ECEFF1,stroke:#546E7A,color:#263238
+    classDef preview fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef process fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+    classDef success fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef error fill:#FCE4EC,stroke:#C62828,color:#B71C1C
+    classDef action fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+
+    class Start start
+    class ShowBuilder,UserConfig,ShowRecent,FormatCSV builder
+    class Preview,ShowPreview,FullPreview preview
+    class Generate,Processing,ProgressUpdate,ReportReady process
+    class Download,LogAudit,ShowSuccess,RecentReports success
+    class ReportError error
+    class UserAction action

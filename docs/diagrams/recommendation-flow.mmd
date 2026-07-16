@@ -1,0 +1,122 @@
+---
+title: "VineMind AI — Recommendation Generation Flow"
+---
+flowchart TB
+    START(["Daily Scheduled Run<br/>or Manual Trigger"])
+
+    subgraph Ingestion["Data Ingestion"]
+        I1["Load ETa/ETo/Kc<br/>GeoTIFFs"]
+        I2["Load NDVI<br/>GeoTIFF"]
+        I3["Load Vineyard<br/>Block Polygons"]
+        I4["Load Phenology<br/>Data"]
+        I5["Load Soil<br/>Moisture Data"]
+        I6["Fetch Weather<br/>Forecast"]
+    end
+
+    subgraph Processing["Spatial Processing"]
+        PR1["Validate CRS<br/>& Geometry"]
+        PR2["Reproject to<br/>Common CRS"]
+        PR3["Clip Rasters<br/>to Block Boundaries"]
+        PR4["Calculate Block<br/>Statistics (Mean)"]
+    end
+
+    subgraph Features["Feature Engineering"]
+        FE1["Water Deficit<br/>= ETo − ETa"]
+        FE2["ET Ratio<br/>= ETa / ETo"]
+        FE3["NDVI Trend<br/>= Current − Previous"]
+        FE4["Soil Moisture<br/>Index"]
+        FE5["Rainfall<br/>Offset"]
+        FE6["Phenology<br/>Weight"]
+    end
+
+    subgraph StressModel["Water Stress Model"]
+        WS1["Normalise<br/>Features (0–1)"]
+        WS2["Apply Configurable<br/>Weights"]
+        WS3["Weighted Sum<br/>→ Score (0–100)"]
+        WS4["Assign Stress<br/>Category"]
+        WS5["Calculate<br/>Confidence"]
+    end
+
+    subgraph Context["Context Assembly"]
+        CT1["Gather All<br/>Block Data"]
+        CT2["Enrich with<br/>Weather Forecast"]
+        CT3["Add Historical<br/>Context"]
+        CT4["Build Unified<br/>Context Object"]
+    end
+
+    subgraph Priority["Priority Engine"]
+        PRIO1["Rank Blocks by<br/>Stress Score"]
+        PRIO2["Factor in<br/>Block Size"]
+        PRIO3["Factor in<br/>Growth Stage"]
+        PRIO4["Factor in<br/>Forecast Rainfall"]
+        PRIO5["Generate Daily<br/>Irrigation Queue"]
+    end
+
+    subgraph Recommend["Recommendation Engine"]
+        REC1{"Score<br/>Range?"}
+        REC2["Irrigate<br/>Immediately<br/>(81–100)"]
+        REC3["Irrigate<br/>Tonight<br/>(61–80)"]
+        REC4["Delay /<br/>Monitor<br/>(21–60)"]
+        REC5["No Action<br/>Required<br/>(0–20)"]
+    end
+
+    subgraph Explain["Explanation Engine"]
+        EX1["Compile<br/>Evidence"]
+        EX2["Generate<br/>Natural Language"]
+        EX3["Build Decision<br/>Evidence Package"]
+    end
+
+    subgraph Persist["Persistence"]
+        DB[("PostgreSQL<br/>+ PostGIS")]
+    end
+
+    subgraph Notify["Notification"]
+        N1["Update<br/>Dashboard"]
+        N2["AI Copilot<br/>Ready"]
+        N3["Optional<br/>Email Alert"]
+    end
+
+    START --> I1 & I2 & I3 & I4 & I5 & I6
+    I1 & I2 & I3 & I4 & I5 & I6 --> PR1
+    PR1 --> PR2 --> PR3 --> PR4
+    PR4 --> FE1 & FE2 & FE3 & FE4 & FE5 & FE6
+    FE1 & FE2 & FE3 & FE4 & FE5 & FE6 --> WS1
+    WS1 --> WS2 --> WS3 --> WS4 --> WS5
+    WS3 --> CT1
+    WS4 --> CT1
+    WS5 --> CT1
+    I6 --> CT2
+    CT1 --> CT2 --> CT3 --> CT4
+    CT4 --> PRIO1
+    PRIO1 --> PRIO2 --> PRIO3 --> PRIO4 --> PRIO5
+    PRIO5 --> REC1
+    REC1 -->|"81–100"| REC2
+    REC1 -->|"61–80"| REC3
+    REC1 -->|"21–60"| REC4
+    REC1 -->|"0–20"| REC5
+    REC2 & REC3 & REC4 & REC5 --> EX1
+    EX1 --> EX2 --> EX3
+    EX3 --> DB
+    DB --> N1 & N2 & N3
+
+    classDef ingestion fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef processing fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    classDef features fill:#FBE9E7,stroke:#D84315,color:#BF360C
+    classDef stress fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef context fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef priority fill:#E0F2F1,stroke:#00796B,color:#004D40
+    classDef recommend fill:#FCE4EC,stroke:#C62828,color:#B71C1C
+    classDef explain fill:#EDE7F6,stroke:#512DA8,color:#311B92
+    classDef persist fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef notify fill:#ECEFF1,stroke:#546E7A,color:#263238
+
+    class I1,I2,I3,I4,I5,I6 ingestion
+    class PR1,PR2,PR3,PR4 processing
+    class FE1,FE2,FE3,FE4,FE5,FE6 features
+    class WS1,WS2,WS3,WS4,WS5 stress
+    class CT1,CT2,CT3,CT4 context
+    class PRIO1,PRIO2,PRIO3,PRIO4,PRIO5 priority
+    class REC1,REC2,REC3,REC4,REC5 recommend
+    class EX1,EX2,EX3 explain
+    class DB persist
+    class N1,N2,N3 notify

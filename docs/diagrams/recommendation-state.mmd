@@ -1,0 +1,64 @@
+---
+title: "VineMind AI — Recommendation State Machine"
+---
+stateDiagram-v2
+    [*] --> Generated : Water Stress Model<br/>produces score
+
+    Generated --> Pending : Decision Intelligence<br/>Engine assigns<br/>recommendation
+
+    state Pending {
+        [*] --> AwaitingReview
+        AwaitingReview : Recommendation displayed<br/>on dashboard
+    }
+
+    Pending --> Accepted : User approves<br/>irrigation action
+
+    Pending --> Dismissed : User dismisses<br/>with reason
+
+    Pending --> Expired : valid_until<br/>timestamp passed
+
+    Accepted --> Completed : Irrigation<br/>confirmed executed
+
+    Accepted --> Reverted : User reverses<br/>decision
+
+    Completed --> [*]
+    Reverted --> [*]
+
+    state Dismissed {
+        [*] --> ReasonCaptured
+        ReasonCaptured : User provides<br/>dismissal reason
+        ReasonCaptured --> Logged
+        Logged : Logged to<br/>audit trail
+    }
+
+    Dismissed --> [*]
+
+    Expired --> [*]
+
+    note right of Generated
+        Stress Score: 0-100
+        Category assigned
+        Confidence calculated
+        DEP created
+    end note
+
+    note right of Pending
+        Priority ranked
+        Action assigned:
+        - Irrigate Immediately (81-100)
+        - Irrigate Tonight (61-80)
+        - Delay/Monitor (21-60)
+        - No Action (0-20)
+    end note
+
+    note right of Accepted
+        Timestamp logged
+        User identity recorded
+        Audit trail created
+    end note
+
+    note right of Dismissed
+        Reason required
+        Cannot be re-accepted
+        Historical record preserved
+    end note

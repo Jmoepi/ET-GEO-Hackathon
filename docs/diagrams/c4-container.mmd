@@ -1,0 +1,69 @@
+---
+title: "VineMind AI — C4 Container Diagram (Level 2)"
+---
+graph TB
+    subgraph People["People"]
+        VM["Vineyard Manager"]
+        VT["Viticulturist"]
+        FO["Farm Owner"]
+    end
+
+    subgraph ExternalSystems["External Systems"]
+        TC["TerraClim<br/>ET-GEO Data Pack"]
+        WX["OpenWeather API"]
+    end
+
+    subgraph System["VineMind AI"]
+
+        subgraph Frontend["Frontend Container"]
+            DASH["Dashboard<br/>(React 19 + TypeScript)<br/>- Health Overview<br/>- Priority List<br/>- Weather Summary"]
+            MAP["Interactive Map<br/>(Mapbox GL JS)<br/>- Block Boundaries<br/>- Stress Colours<br/>- Recommendation Overlays"]
+            COPILOT_UI["AI Copilot Panel<br/>(Chat Interface)<br/>- Explain Recommendations<br/>- Compare Blocks<br/>- Generate Reports"]
+            ANALYTICS["Analytics Views<br/>(Recharts)<br/>- ETa/ETo Trends<br/>- NDVI Evolution<br/>- Seasonal Comparison"]
+        end
+
+        subgraph Backend["Backend Container"]
+            API_FAST["FastAPI REST API<br/>(Python 3.11+)<br/>- JWT Auth<br/>- Rate Limiting<br/>- Input Validation"]
+            DE["Decision Intelligence<br/>Engine<br/>- Water Stress Model<br/>- Recommendation Rules<br/>- Confidence Scoring<br/>- DEP Generation"]
+            GEO_PIPE["Geospatial<br/>Processing Pipeline<br/>(Rasterio + GeoPandas)<br/>- Raster Ingestion<br/>- Block Aggregation<br/>- Feature Engineering"]
+            COPILOT_SVC["AI Copilot Service<br/>(LLM + RAG)<br/>- Intent Classification<br/>- Context Retrieval<br/>- Explanation Generation"]
+        end
+
+        subgraph Data["Data Containers"]
+            DB[("PostgreSQL 16<br/>+ PostGIS<br/>- Vineyard Blocks<br/>- Observations<br/>- Recommendations<br/>- Decision Evidence")]
+            CACHE[("Redis 7<br/>(Future)<br/>- Session Cache<br/>- Weather Cache")]
+        end
+    end
+
+    VM --> DASH
+    VM --> MAP
+    VM --> COPILOT_UI
+    VT --> ANALYTICS
+    VT --> MAP
+    FO --> DASH
+
+    DASH --> API_FAST
+    MAP --> API_FAST
+    COPILOT_UI --> COPILOT_SVC
+    ANALYTICS --> API_FAST
+
+    API_FAST --> DE
+    API_FAST --> GEO_PIPE
+    API_FAST --> DB
+
+    DE --> DB
+    GEO_PIPE --> DB
+    COPILOT_SVC --> DB
+
+    TC --> GEO_PIPE
+    WX --> API_FAST
+
+    classDef frontend fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef backend fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef data fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef external fill:#ECEFF1,stroke:#546E7A,color:#263238
+
+    class DASH,MAP,COPILOT_UI,ANALYTICS frontend
+    class API_FAST,DE,GEO_PIPE,COPILOT_SVC backend
+    class DB,CACHE data
+    class TC,WX external

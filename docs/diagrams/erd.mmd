@@ -1,0 +1,146 @@
+---
+title: "VineMind AI — Entity Relationship Diagram"
+---
+erDiagram
+    USERS {
+        uuid id PK
+        varchar name
+        varchar email UK
+        varchar password_hash
+        varchar role
+        jsonb preferences
+        timestamp created_at
+    }
+
+    VINEYARDS {
+        uuid id PK
+        varchar name
+        uuid owner_id FK
+        geography location
+        geography boundary
+        decimal area_hectares
+        jsonb metadata
+        timestamp created_at
+    }
+
+    VINEYARD_BLOCKS {
+        uuid id PK
+        uuid vineyard_id FK
+        varchar name
+        varchar cultivar
+        decimal area_ha
+        geography geometry
+        varchar planting_year
+        jsonb metadata
+        timestamp created_at
+    }
+
+    DAILY_OBSERVATIONS {
+        uuid id PK
+        uuid block_id FK
+        date observation_date
+        decimal eta
+        decimal eto
+        decimal kc
+        decimal ndvi
+        decimal soil_moisture
+        decimal temperature
+        decimal rainfall
+        varchar phenology_stage
+        varchar data_source
+        timestamp ingested_at
+    }
+
+    WATER_STRESS_SCORES {
+        uuid id PK
+        uuid observation_id FK
+        uuid block_id FK
+        decimal stress_score
+        varchar stress_category
+        decimal confidence
+        varchar model_version
+        jsonb contributors
+        timestamp generated_at
+    }
+
+    RECOMMENDATIONS {
+        uuid id PK
+        uuid stress_score_id FK
+        uuid block_id FK
+        varchar recommendation_type
+        varchar priority
+        varchar status
+        decimal estimated_volume_litres
+        varchar explanation
+        decimal confidence
+        timestamp generated_at
+        timestamp valid_until
+    }
+
+    DECISION_EVIDENCE {
+        uuid id PK
+        uuid recommendation_id FK
+        jsonb contributors_json
+        decimal stress_score
+        decimal confidence
+        varchar model_version
+        jsonb decision_rules_triggered
+        timestamp generated_at
+    }
+
+    WEATHER_RECORDS {
+        uuid id PK
+        uuid block_id FK
+        date record_date
+        decimal temperature_min
+        decimal temperature_max
+        decimal rainfall_mm
+        decimal humidity_percent
+        varchar source
+        timestamp fetched_at
+    }
+
+    ALERTS {
+        uuid id PK
+        uuid block_id FK
+        varchar alert_type
+        varchar severity
+        varchar message
+        boolean acknowledged
+        timestamp created_at
+    }
+
+    REPORTS {
+        uuid id PK
+        uuid user_id FK
+        varchar report_type
+        jsonb parameters
+        varchar file_url
+        timestamp generated_at
+    }
+
+    AI_INTERACTION_LOGS {
+        uuid id PK
+        uuid user_id FK
+        varchar session_id
+        text user_question
+        text ai_response
+        jsonb evidence_used
+        decimal confidence
+        timestamp interacted_at
+    }
+
+    USERS ||--o{ VINEYARDS : "owns"
+    VINEYARDS ||--o{ VINEYARD_BLOCKS : "contains"
+    VINEYARD_BLOCKS ||--o{ DAILY_OBSERVATIONS : "generates"
+    VINEYARD_BLOCKS ||--o{ WATER_STRESS_SCORES : "has"
+    VINEYARD_BLOCKS ||--o{ RECOMMENDATIONS : "receives"
+    VINEYARD_BLOCKS ||--o{ WEATHER_RECORDS : "tracked_by"
+    VINEYARD_BLOCKS ||--o{ ALERTS : "triggers"
+
+    DAILY_OBSERVATIONS ||--o| WATER_STRESS_SCORES : "produces"
+    WATER_STRESS_SCORES ||--o| RECOMMENDATIONS : "determines"
+    RECOMMENDATIONS ||--o| DECISION_EVIDENCE : "supported_by"
+
+    USERS ||--o{ REPORTS : "generates"
+    USERS ||--o{ AI_INTERACTION_LOGS : "creates"

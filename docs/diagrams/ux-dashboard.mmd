@@ -1,0 +1,63 @@
+---
+title: "VineMind AI — Dashboard Flow"
+---
+flowchart TB
+    Start(["User lands on Dashboard"]) --> LoadData["Fetch Data in Parallel"]
+    
+    LoadData --> F1["GET /vineyards<br/>summary"]
+    LoadData --> F2["GET /blocks<br/>status + stress"]
+    LoadData --> F3["GET /recommendations<br/>pending"]
+    LoadData --> F4["GET /weather<br/>current + forecast"]
+    LoadData --> F5["GET /alerts<br/>active"]
+    
+    F1 --> Render["Render Dashboard"]
+    F2 --> Render
+    F3 --> Render
+    F4 --> Render
+    F5 --> Render
+    
+    Render --> Overview["Display Overview Cards<br/><br/>● Avg Stress: 52/100<br/>● Water Deficit: 12.4mm<br/>● Active Alerts: 2<br/>● Weather: 28°C No Rain"]
+    
+    Overview --> Priority["Display Priority List<br/><br/>Ranked blocks by stress:<br/>Block A [74] Irrigate Tonight<br/>Block C [58] Delay<br/>Block B [32] No Action"]
+    
+    Priority --> Weather["Display Weather Panel<br/><br/>Current + 3-day forecast<br/>Temperature, rain, humidity"]
+    
+    Weather --> UserAction{"User Action"}
+    
+    UserAction -->|"Click Block Card"| NavigateBlock["Navigate to<br/>Block Details Page"]
+    
+    UserAction -->|"Click 'View Details'<br/>on priority item"| NavigateBlock
+    
+    UserAction -->|"Click 'Approve'<br/>on priority item"| ApproveFlow["Open Confirmation<br/>Dialog:<br/>'Approve irrigation<br/>for Block A?'"]
+    
+    UserAction -->|"Click Map<br/>thumbnail"| NavigateExplorer["Navigate to<br/>Vineyard Explorer"]
+    
+    UserAction -->|"Click 'Ask Copilot'"| OpenCopilot["Open AI Copilot<br/>Panel"]
+    
+    ApproveFlow --> Confirm{"User Confirms?"}
+    Confirm -->|"Yes"| ApproveAPI["POST /recommendations<br/>/{id}/accept"]
+    ApproveAPI --> AuditLog["Log to audit trail<br/>(user, block, timestamp)"]
+    AuditLog --> RefreshDashboard["Refresh Dashboard"]
+    
+    Confirm -->|"No"| CloseDialog["Close Dialog"]
+    CloseDialog --> Priority
+    
+    RefreshDashboard --> Priority
+    
+    UserAction -->|"Click 'View All<br/>Blocks'"| NavigateExplorer
+    
+    UserAction -->|"Click 'Generate<br/>Report'"| NavigateReports["Navigate to<br/>Reports Page"]
+
+    classDef start fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef fetch fill:#ECEFF1,stroke:#546E7A,color:#263238
+    classDef render fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef action fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+    classDef decision fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef navigate fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+
+    class Start start
+    class F1,F2,F3,F4,F5 fetch
+    class Render,Overview,Priority,Weather render
+    class ApproveFlow,AuditLog,RefreshDashboard action
+    class UserAction,Confirm decision
+    class NavigateBlock,NavigateExplorer,NavigateReports,OpenCopilot navigate

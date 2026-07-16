@@ -1,0 +1,61 @@
+---
+title: "VineMind AI — Block Details (Decision Evidence) Flow"
+---
+flowchart TB
+    Start(["User selects a block"]) --> FetchBlock["Fetch block data<br/>GET /blocks/{id}"]
+    FetchBlock --> FetchObs["Fetch latest observation<br/>GET /observations/{blockId}"]
+    FetchObs --> FetchStress["Fetch stress score<br/>GET /stress/{blockId}"]
+    FetchStress --> FetchRec["Fetch recommendation<br/>GET /recommendations/{blockId}"]
+    FetchRec --> FetchDEP["Fetch Decision Evidence<br/>GET /evidence/{blockId}"]
+    FetchDEP --> FetchHistory["Fetch history<br/>GET /stress/history/{blockId}"]
+    
+    FetchHistory --> Render["Render Block Details Page"]
+    
+    Render --> Header["Block Header<br/>Name: Block A<br/>Cultivar: Merlot<br/>Area: 12.5 ha<br/>Phenology: Veraison"]
+    
+    Header --> Metrics["Observation Metrics Panel<br/>ETa: 3.2mm ▼-8%<br/>ETo: 4.8mm ─ stable<br/>NDVI: 0.72 ▼-0.08<br/>Soil Moisture: 42% ▼-5%<br/>Rainfall: 0mm"]
+    
+    Header --> Evidence["Decision Evidence Panel<br/>Water Deficit: 4.2mm (30%)<br/>ET Ratio: 0.82 (20%)<br/>Soil Moisture: 0.61 (20%)<br/>NDVI Trend: -0.08 (15%)<br/>Rainfall: 0mm (10%)<br/>Phenology: Veraison (5%)<br/>Total: 74/100<br/>Confidence: 87%"]
+    
+    Header --> Recommendation["Recommendation Panel<br/>🔴 IRRIGATE TONIGHT<br/>Priority: #1 of 8<br/>Volume: 4,500 L<br/>Confidence: 87%<br/>Model: WSM-1.0"]
+    
+    Metrics --> Charts["Historical Charts<br/>ETa vs ETo (7 days)<br/>NDVI Trend (30 days)<br/>Stress Score History"]
+    
+    Evidence --> DEPDetail["Expandable DEP<br/>Full JSON view<br/>Model version<br/>Rules triggered"]
+    
+    Recommendation --> Explanation["Explanation Text<br/>'Block A shows high water<br/>stress due to significant<br/>water deficit...'"]
+    
+    Explanation --> UserAction{"User Action"}
+    
+    UserAction -->|"Click 'Approve'"| ApproveFlow["Open Confirmation<br/>Dialog"]
+    ApproveFlow --> ConfirmApprove{"Confirmed?"}
+    ConfirmApprove -->|"Yes"| ApproveAPI["POST /recommendations<br/>/{id}/accept"]
+    ApproveAPI --> AuditLog["Log to audit trail"]
+    AuditLog --> StatusUpdate["Update status →<br/>'accepted'"]
+    StatusUpdate --> RefreshPage["Refresh page"]
+    RefreshPage --> Render
+    
+    ConfirmApprove -->|"No"| UserAction
+    
+    UserAction -->|"Click 'Dismiss'"| DismissFlow["Show dismiss dialog<br/>[Reason: _________]"]
+    DismissFlow --> DismissAPI["POST /recommendations<br/>/{id}/dismiss"]
+    DismissAPI --> StatusUpdate2["Update status →<br/>'dismissed'"]
+    StatusUpdate2 --> RefreshPage
+    
+    UserAction -->|"Click 'Ask Copilot'"| OpenCopilot["Open AI Copilot<br/>pre-filled:<br/>'Explain this<br/>recommendation'"]
+    
+    UserAction -->|"Click 'Back'"| NavigateBack["Navigate to<br/>previous page"]
+
+    classDef start fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef fetch fill:#ECEFF1,stroke:#546E7A,color:#263238
+    classDef render fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef panel fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    classDef action fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+    classDef decision fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+
+    class Start start
+    class FetchBlock,FetchObs,FetchStress,FetchRec,FetchDEP,FetchHistory fetch
+    class Render,RefreshPage render
+    class Header,Metrics,Evidence,Recommendation,Charts,DEPDetail,Explanation panel
+    class ApproveFlow,AuditLog,DismissFlow,DismissAPI action
+    class UserAction,ConfirmApprove decision

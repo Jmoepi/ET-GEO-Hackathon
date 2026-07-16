@@ -1,0 +1,81 @@
+---
+title: "VineMind AI — Deployment Architecture"
+---
+graph TB
+    subgraph Users["End Users"]
+        BROWSER["Web Browser<br/>(Chrome, Firefox, Safari)"]
+    end
+
+    subgraph CDN["CDN Layer"]
+        VERCEL_CF["Vercel Edge Network<br/>(Static Assets +<br/>Frontend Hosting)"]
+    end
+
+    subgraph Frontend["Frontend Deployment"]
+        FE_NEXT["Next.js / React App<br/>(Vercel)"]
+    end
+
+    subgraph Backend["Backend Deployment"]
+        API_HOST["FastAPI Application<br/>(Railway / Render)<br/>Docker Container"]
+        WORKER["Background Worker<br/>(Geospatial Pipeline)<br/>Docker Container"]
+    end
+
+    subgraph DataLayer["Data Layer"]
+        PG[("PostgreSQL 16<br/>+ PostGIS<br/>(Managed Service)<br/>Primary + Read Replica")]
+        REDIS[("Redis 7<br/>(Future)<br/>Session + Cache")]
+    end
+
+    subgraph External["External Services"]
+        GEE["Google Earth Engine<br/>(Satellite Imagery)"]
+        OWA["OpenWeather API<br/>(Weather Data)"]
+        LLM_SVC["Azure OpenAI<br/>(Copilot LLM)"]
+    end
+
+    subgraph DevOps["DevOps & CI/CD"]
+        GH["GitHub<br/>Source Control"]
+        GHA["GitHub Actions<br/>CI/CD Pipeline"]
+        DOCKER_HUB["Docker Hub<br/>Container Registry"]
+    end
+
+    subgraph Monitoring["Monitoring"]
+        HEALTH["Health Endpoints<br/>/health, /ready, /live"]
+        LOGS["Application Logs<br/>(Structured JSON)"]
+        METRICS["Metrics<br/>(CPU, Memory, Latency)"]
+    end
+
+    BROWSER -->|"HTTPS"| VERCEL_CF
+    VERCEL_CF -->|"Static + SSR"| FE_NEXT
+    FE_NEXT -->|"REST API<br/>HTTPS"| API_HOST
+    API_HOST -->|"Query"| PG
+    WORKER -->|"Read/Write"| PG
+    API_HOST -->|"Cache"| REDIS
+    WORKER -->|"Ingest"| GEE
+    API_HOST -->|"Forecast"| OWA
+    API_HOST -->|"Chat"| LLM_SVC
+
+    GH -->|"Push"| GHA
+    GHA -->|"Build"| DOCKER_HUB
+    DOCKER_HUB -->|"Deploy"| API_HOST
+    DOCKER_HUB -->|"Deploy"| WORKER
+    GHA -->|"Deploy"| FE_NEXT
+
+    API_HOST --> HEALTH
+    API_HOST --> LOGS
+    API_HOST --> METRICS
+
+    classDef users fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef cdn fill:#ECEFF1,stroke:#546E7A,color:#263238
+    classDef frontend fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef backend fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef data fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef external fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    classDef devops fill:#ECEFF1,stroke:#546E7A,color:#263238
+    classDef monitoring fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+
+    class BROWSER users
+    class VERCEL_CF cdn
+    class FE_NEXT frontend
+    class API_HOST,WORKER backend
+    class PG,REDIS data
+    class GEE,OWA,LLM_SVC external
+    class GH,GHA,DOCKER_HUB devops
+    class HEALTH,LOGS,METRICS monitoring

@@ -1,0 +1,62 @@
+---
+title: "VineMind AI — AI Copilot Flow"
+---
+flowchart TB
+    Start(["User opens Copilot"]) --> InitSession["Initialise chat session<br/>Load history from<br/>localStorage"]
+    
+    InitSession --> Greeting["Display greeting:<br/>'Good morning, Pieter.<br/>Block A needs attention<br/>today. How can I help?'"]
+    
+    Greeting --> UserInput["User types question<br/><br/>Examples:<br/>'Why is Block A stressed<br/>more than Block B?'<br/>'What happens if it rains?'<br/>'Summarise this week'"]
+    
+    UserInput --> IntentClassify["Intent Classification<br/><br/>• explain_recommendation<br/>• compare_blocks<br/>• summarize_trends<br/>• operational_question"]
+    
+    IntentClassify --> EntityExtract["Entity Extraction<br/><br/>• Block identifiers<br/>• Time ranges<br/>• Metrics<br/>• Comparison targets"]
+    
+    EntityExtract --> RetrieveEvidence["Retrieve Evidence<br/><br/>GET /evidence/{blockId}<br/>GET /stress/history/{blockId}<br/>GET /recommendations/{blockId}"]
+    
+    RetrieveEvidence --> BuildContext["Build Context<br/><br/>DEP data +<br/>weather +<br/>historical +<br/>user preferences"]
+    
+    BuildContext --> PromptBuild["Build LLM Prompt<br/><br/>System: 'You explain<br/>vineyard recommendations...'<br/>Context: [DEP evidence]<br/>User: [question]"]
+    
+    PromptBuild --> LLMCall["Call Azure OpenAI<br/>(streaming response)"]
+    
+    LLMCall --> ResponseValidate["Validate Response<br/><br/>• Grounded in DEP?<br/>• No unsupported claims?<br/>• Confidence cited?<br/>• Sources referenced?"]
+    
+    ResponseValidate -->|"Valid"| DisplayResponse["Display Response<br/><br/>• Natural language explanation<br/>• Evidence cards<br/>• Confidence indicator<br/>• Source citations"]
+    
+    ResponseValidate -->|"Invalid / Hallucination"| Fallback["Fallback Response<br/><br/>'I can explain based on<br/>the available data...'<br/>Show DEP data directly"]
+    Fallback --> DisplayResponse
+    
+    DisplayResponse --> SuggestFollowups["Suggest Follow-ups<br/><br/>• 'Show me the evidence'<br/>• 'Compare with Block C'<br/>• 'What's the forecast?'"]
+    
+    SuggestFollowups --> UserAction{"User Action"}
+    
+    UserAction -->|"Click follow-up"| UserInput
+    
+    UserAction -->|"Type new question"| UserInput
+    
+    UserAction -->|"Click 'View Block<br/>on Map'"| NavigateMap["Navigate to<br/>Vineyard Explorer<br/>with block highlighted"]
+    
+    UserAction -->|"Click 'View Full<br/>Details'"| NavigateDetails["Navigate to<br/>Block Details Page"]
+    
+    UserAction -->|"Close panel"| ClosePanel["Save session<br/>to localStorage<br/>Close copilot panel"]
+    
+    UserAction -->|"Rate response"| RateResponse["Capture feedback:<br/>👍 Helpful / 👎 Not helpful<br/>Log for model improvement"]
+
+    classDef start fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef init fill:#ECEFF1,stroke:#546E7A,color:#263238
+    classDef process fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    classDef llm fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+    classDef display fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef action fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef fallback fill:#FCE4EC,stroke:#C62828,color:#B71C1C
+    classDef navigate fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+
+    class Start start
+    class InitSession,Greeting init
+    class IntentClassify,EntityExtract,RetrieveEvidence,BuildContext,PromptBuild process
+    class LLMCall,ResponseValidate llm
+    class DisplayResponse,SuggestFollowups display
+    class UserAction action
+    class Fallback fallback
+    class NavigateMap,NavigateDetails,ClosePanel navigate

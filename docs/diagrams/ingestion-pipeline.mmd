@@ -1,0 +1,124 @@
+---
+title: "VineMind AI — Data Ingestion Pipeline"
+---
+flowchart TB
+    subgraph Sources["External Data Sources"]
+        TC["TerraClim ET-GEO<br/>Data Pack"]
+        OW["OpenWeather<br/>API"]
+        FUTURE_IOT["Future:<br/>IoT Sensors"]
+        FUTURE_DRONE["Future:<br/>Drone Imagery"]
+    end
+
+    subgraph Acquisition["Data Acquisition"]
+        A1["Download/Upload<br/>GeoTIFF Files"]
+        A2["Upload Shapefiles<br/>(Block Boundaries)"]
+        A3["Upload Phenology<br/>(CSV/Excel)"]
+        A4["Upload Soil<br/>Moisture (CSV)"]
+        A5["REST API<br/>Weather Fetch"]
+    end
+
+    subgraph Validation["Data Validation"]
+        V1{"File<br/>Integrity?"}
+        V2{"CRS<br/>Valid?"}
+        V3{"Geometry<br/>Valid?"}
+        V4{"No<br/>Duplicates?"}
+        V5["Quarantine<br/>(Log Error)"]
+    end
+
+    subgraph Storage["Raw Data Storage"]
+        S1["Filesystem<br/>(Local /dev/data)"]
+        S2["Future: S3<br/>(Object Storage)"]
+    end
+
+    subgraph Processing["Geospatial Processing"]
+        P1["Load with<br/>Rasterio"]
+        P2["Reproject to<br/>Common CRS (4326)"]
+        P3["Mask NoData<br/>Values"]
+        P4["Clip to<br/>Block Boundaries"]
+    end
+
+    subgraph Aggregation["Spatial Aggregation"]
+        AG1["Calculate Mean<br/>ETa per Block"]
+        AG2["Calculate Mean<br/>ETo per Block"]
+        AG3["Calculate Mean<br/>Kc per Block"]
+        AG4["Calculate Mean<br/>NDVI per Block"]
+        AG5["Aggregate Soil<br/>Moisture per Block"]
+        AG6["Map Phenology<br/>Stage per Block"]
+    end
+
+    subgraph Quality["Quality Checks"]
+        QC1{"Mean in<br/>Valid Range?"}
+        QC2{"No Excessive<br/>NoData?"}
+        QC3{"Date<br/>Consistent?"}
+        QC4["Flag Outliers<br/>& Log Warning"]
+    end
+
+    subgraph Persistence["Database Persistence"]
+        DB[("PostgreSQL<br/>+ PostGIS")]
+        OBS["Daily Observations<br/>(Append-Only)"]
+        META["Import Metadata<br/>(Source, CRS, Checksum)"]
+    end
+
+    TC --> A1
+    TC --> A2
+    TC --> A3
+    TC --> A4
+    OW --> A5
+    FUTURE_IOT -.-> A5
+    FUTURE_DRONE -.-> A1
+
+    A1 --> V1
+    A2 --> V1
+    A3 --> V1
+    A4 --> V1
+    A5 --> V1
+
+    V1 -->|"Pass"| V2
+    V1 -->|"Fail"| V5
+    V2 -->|"Valid"| V3
+    V2 -->|"Invalid"| V5
+    V3 -->|"Valid"| V4
+    V3 -->|"Invalid repair"| V3
+    V3 -->|"Unrepairable"| V5
+    V4 -->|"No duplicates"| S1
+    V4 -->|"Duplicate found"| V5
+
+    S1 --> P1
+    P1 --> P2 --> P3 --> P4
+
+    P4 --> AG1 & AG2 & AG3 & AG4 & AG5 & AG6
+
+    AG1 --> QC1
+    AG2 --> QC1
+    AG3 --> QC1
+    AG4 --> QC1
+    AG5 --> QC1
+    AG6 --> QC1
+
+    QC1 -->|"Yes"| QC2
+    QC1 -->|"Out of range"| QC4
+    QC2 -->|"Acceptable"| QC3
+    QC2 -->|"Too much NoData"| QC4
+    QC3 -->|"Consistent"| DB
+    QC3 -->|"Inconsistent"| QC4
+
+    DB --> OBS
+    DB --> META
+
+    classDef sources fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef acquisition fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef validation fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+    classDef storage fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    classDef processing fill:#E0F2F1,stroke:#00796B,color:#004D40
+    classDef aggregation fill:#FBE9E7,stroke:#D84315,color:#BF360C
+    classDef quality fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef persistence fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+
+    class TC,OW,FUTURE_IOT,FUTURE_DRONE sources
+    class A1,A2,A3,A4,A5 acquisition
+    class V1,V2,V3,V4,V5 validation
+    class S1,S2 storage
+    class P1,P2,P3,P4 processing
+    class AG1,AG2,AG3,AG4,AG5,AG6 aggregation
+    class QC1,QC2,QC3,QC4 quality
+    class DB,OBS,META persistence

@@ -1,0 +1,148 @@
+---
+title: "VineMind AI — Data Processing Pipeline"
+---
+flowchart LR
+    subgraph Input["Input Data Sources"]
+        ETA["ETa GeoTIFF<br/>(Actual Evapotranspiration)"]
+        ETO["ETo GeoTIFF<br/>(Reference ET)"]
+        KC["Kc GeoTIFF<br/>(Crop Coefficient)"]
+        NDVI_R["NDVI GeoTIFF<br/>(Vegetation Index)"]
+        SHP["Vineyard Blocks<br/>(Shapefile/GeoPackage)"]
+        PHENO["Phenology<br/>(Excel/CSV)"]
+        SOIL["Soil Moisture<br/>(CSV/Raster)"]
+        WX_RAW["Weather Data<br/>(OpenWeather API)"]
+    end
+
+    subgraph Validation["Stage 1 — Validation"]
+        V1["File Integrity<br/>Check"]
+        V2["CRS<br/>Compatibility"]
+        V3["Geometry<br/>Validity"]
+        V4["Date<br/>Consistency"]
+    end
+
+    subgraph Processing["Stage 2 — Geospatial Processing"]
+        P1["Load Raster<br/>(Rasterio)"]
+        P2["Load Polygons<br/>(GeoPandas)"]
+        P3["CRS<br/>Reprojection"]
+        P4["Clip Raster<br/>to Blocks"]
+    end
+
+    subgraph Aggregation["Stage 3 — Spatial Aggregation"]
+        A1["Mean ETa<br/>per Block"]
+        A2["Mean ETo<br/>per Block"]
+        A3["Mean Kc<br/>per Block"]
+        A4["Mean NDVI<br/>per Block"]
+        A5["Soil Moisture<br/>per Block"]
+        A6["Phenology<br/>Stage"]
+    end
+
+    subgraph Features["Stage 4 — Feature Engineering"]
+        F1["Water Deficit<br/>(ETo − ETa)"]
+        F2["ET Ratio<br/>(ETa / ETo)"]
+        F3["NDVI Trend<br/>(Current − Previous)"]
+        F4["Soil Moisture Index<br/>(Current / Seasonal Avg)"]
+        F5["Rainfall Offset<br/>(Forecast − Required)"]
+        F6["Phenology Weight"]
+    end
+
+    subgraph Scoring["Stage 5 — Water Stress Scoring"]
+        S1["Normalise<br/>Features (0–1)"]
+        S2["Apply<br/>Weights"]
+        S3["Weighted<br/>Sum"]
+        S4["Water Stress<br/>Score (0–100)"]
+        S5["Confidence<br/>Score"]
+    end
+
+    subgraph Output["Stage 6 — Output"]
+        O1["Recommendation<br/>(Irrigate / Delay / Monitor / No Action)"]
+        O2["Priority<br/>Ranking"]
+        O3["Explanation<br/>(Natural Language)"]
+        O4["Decision Evidence<br/>Package (DEP)"]
+    end
+
+    subgraph Storage["Stage 7 — Persistence"]
+        DB[("PostgreSQL<br/>+ PostGIS")]
+    end
+
+    subgraph Consumers["Consumers"]
+        DASH["Dashboard"]
+        COPILOT["AI Copilot"]
+        REPORT["Reports"]
+    end
+
+    ETA --> V1
+    ETO --> V1
+    KC --> V1
+    NDVI_R --> V1
+    SHP --> V1
+    PHENO --> V1
+    SOIL --> V1
+    WX_RAW --> V1
+
+    V1 --> V2 --> V3 --> V4
+
+    V4 --> P1
+    V4 --> P2
+    P1 --> P3
+    P2 --> P3
+    P3 --> P4
+
+    P4 --> A1
+    P4 --> A2
+    P4 --> A3
+    P4 --> A4
+    P4 --> A5
+    PHENO --> A6
+
+    A1 --> F1
+    A2 --> F1
+    A2 --> F2
+    A1 --> F2
+    A4 --> F3
+    A5 --> F4
+    WX_RAW --> F5
+    A6 --> F6
+
+    F1 --> S1
+    F2 --> S1
+    F3 --> S1
+    F4 --> S1
+    F5 --> S1
+    F6 --> S1
+
+    S1 --> S2 --> S3 --> S4
+    S4 --> S5
+
+    S4 --> O1
+    S4 --> O2
+    S5 --> O3
+    S4 --> O4
+
+    O1 --> DB
+    O2 --> DB
+    O3 --> DB
+    O4 --> DB
+
+    DB --> DASH
+    DB --> COPILOT
+    DB --> REPORT
+
+    classDef input fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef validation fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+    classDef processing fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    classDef aggregation fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef features fill:#FBE9E7,stroke:#D84315,color:#BF360C
+    classDef scoring fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef output fill:#E0F2F1,stroke:#00796B,color:#004D40
+    classDef storage fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef consumers fill:#ECEFF1,stroke:#546E7A,color:#263238
+
+    class ETA,ETO,KC,NDVI_R,SP,PHENO,SOIL,WX_RAW input
+    class V1,V2,V3,V4 validation
+    class P1,P2,P3,P4 processing
+    class A1,A2,A3,A4,A5,A6 aggregation
+    class F1,F2,F3,F4,F5,F6 features
+    class S1,S2,S3,S4,S5 scoring
+    class O1,O2,O3,O4 output
+    class DB storage
+    class DASH,COPILOT,REPORT consumers

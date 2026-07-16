@@ -1,0 +1,71 @@
+---
+title: "VineMind AI — C4 Component Diagram (Level 3 — Backend Services)"
+---
+graph TB
+    subgraph API["FastAPI REST API"]
+        AUTH_SVC["Authentication Service<br/>- JWT Issue/Validate<br/>- Password Hashing (Argon2id)<br/>- RBAC Enforcement"]
+        VINEYARD_SVC["Vineyard Service<br/>- CRUD Operations<br/>- Spatial Queries<br/>- Block Management"]
+        REC_SVC["Recommendation Service<br/>- Daily Recommendations<br/>- Historical Queries<br/>- Priority Ranking"]
+        WEATHER_SVC["Weather Service<br/>- Forecast Retrieval<br/>- Cache Management<br/>- Rainfall Adjustments"]
+        REPORT_SVC["Report Service<br/>- PDF Generation<br/>- CSV Export<br/>- Summary Reports"]
+        EVIDENCE_SVC["Evidence Service<br/>- DEP Retrieval<br/>- Audit Queries<br/>- Confidence Data"]
+    end
+
+    subgraph Engine["Decision Intelligence Engine"]
+        CTX["Context Engine<br/>- Assembles Block Data<br/>- Enriches with Weather<br/>- Historical Context"]
+        WSM["Water Stress Model<br/>- Feature Engineering<br/>- Normalisation<br/>- Weighted Scoring<br/>- 0-100 Score"]
+        PE["Priority Engine<br/>- Block Ranking<br/>- Urgency Assessment<br/>- Irrigation Queue"]
+        RE["Recommendation Engine<br/>- Score → Action Mapping<br/>- Volume Estimation<br/>- Confidence Assignment"]
+        EE["Explanation Engine<br/>- Evidence Compilation<br/>- Natural Language<br/>- DEP Construction"]
+    end
+
+    subgraph GeoPipeline["Geospatial Processing Pipeline"]
+        RASTER["Raster Loader<br/>(Rasterio)<br/>- GeoTIFF Ingestion<br/>- CRS Alignment<br/>- NoData Handling"]
+        VECTOR["Vector Processor<br/>(GeoPandas)<br/>- Polygon Validation<br/>- Geometry Repair<br/>- Spatial Indexing"]
+        AGG["Spatial Aggregator<br/>- Block × Raster Intersection<br/>- Mean/Median/Std Dev<br/>- Pixel Statistics"]
+        FEAT["Feature Generator<br/>- Water Deficit<br/>- ET Ratio<br/>- NDVI Trend<br/>- Soil Moisture Index"]
+    end
+
+    subgraph Copilot["Explainable AI Copilot"]
+        INTENT["Intent Classifier<br/>- Explain Recommendation<br/>- Compare Blocks<br/>- Summarise Trends"]
+        RAG["RAG Pipeline<br/>- Retrieve DEPs<br/>- Fetch Evidence<br/>- Build Context"]
+        LLM["LLM Response Generator<br/>- Grounded Explanations<br/>- Confidence Reporting<br/>- Citation"]
+    end
+
+    API_FAST["FastAPI Router"] --> AUTH_SVC
+    API_FAST --> VINEYARD_SVC
+    API_FAST --> REC_SVC
+    API_FAST --> WEATHER_SVC
+    API_FAST --> REPORT_SVC
+    API_FAST --> EVIDENCE_SVC
+
+    VINEYARD_SVC --> DB[("PostgreSQL<br/>+ PostGIS")]
+
+    REC_SVC --> CTX
+    CTX --> WSM
+    WSM --> PE
+    PE --> RE
+    RE --> EE
+    EE --> DB
+
+    RASTER --> AGG
+    VECTOR --> AGG
+    AGG --> FEAT
+    FEAT --> DB
+
+    API_FAST --> INTENT
+    INTENT --> RAG
+    RAG --> LLM
+    LLM --> DB
+
+    classDef api fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef engine fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef geo fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    classDef copilot fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+    classDef data fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+
+    class AUTH_SVC,VINEYARD_SVC,REC_SVC,WEATHER_SVC,REPORT_SVC,EVIDENCE_SVC api
+    class CTX,WSM,PE,RE,EE engine
+    class RASTER,VECTOR,AGG,FEAT geo
+    class INTENT,RAG,LLM copilot
+    class DB data

@@ -1,0 +1,54 @@
+---
+title: "VineMind AI — Authentication Flow"
+---
+flowchart TB
+    Start(["User opens app"]) --> CheckJWT{"Valid JWT<br/>in localStorage?"}
+    
+    CheckJWT -->|"Yes"| Dashboard["Redirect to<br/>Dashboard"]
+    
+    CheckJWT -->|"No"| LoginPage["Show Login Page<br/><br/>Email + Password<br/>Google / GitHub OAuth"]
+    
+    LoginPage --> ValidateInput{"Input<br/>Valid?"}
+    
+    ValidateInput -->|"No"| ShowError["Show validation<br/>error messages"]
+    ShowError --> LoginPage
+    
+    ValidateInput -->|"Yes"| SubmitLogin["Submit POST<br/>/api/v1/auth/login"]
+    
+    SubmitLogin --> LoginResponse{"Response<br/>Status?"}
+    
+    LoginResponse -->|"200 OK"| StoreJWT["Store JWT in<br/>localStorage"]
+    StoreJWT --> SetUser["Set user context<br/>(name, role, preferences)"]
+    SetUser --> Dashboard
+    
+    LoginResponse -->|"401 Unauthorized"| CredsError["Show error:<br/>'Invalid credentials'"]
+    CredsError --> LoginPage
+    
+    LoginResponse -->|"422 Validation"| InputError["Show field-level<br/>error messages"]
+    InputError --> LoginPage
+    
+    LoginResponse -->|"500 Server"| ServerError["Show error:<br/>'Service unavailable'"]
+    ServerError --> LoginPage
+    
+    LoginPage --> ForgotPw["Click 'Forgot<br/>Password?'"]
+    ForgotPw --> ResetPage["Show password<br/>reset page"]
+    
+    LoginPage --> OAuthGoogle["Click 'Google'"]
+    OAuthGoogle --> OAuthRedirect["Redirect to<br/>Google OAuth"]
+    OAuthRedirect --> OAuthCallback["Callback with<br/>authorization code"]
+    OAuthCallback --> StoreJWT
+    
+    LoginPage --> SignUp["Click 'Sign up'"]
+    SignUp --> SignUpPage["Show registration<br/>page"]
+
+    classDef start fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef decision fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef action fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef error fill:#FCE4EC,stroke:#C62828,color:#B71C1C
+    classDef page fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+
+    class Start start
+    class CheckJWT,ValidateInput,LoginResponse decision
+    class StoreJWT,SetUser,SubmitLogin,Dashboard action
+    class ShowError,CredsError,InputError,ServerError error
+    class LoginPage,ResetPage,SignUpPage,OAuthRedirect page

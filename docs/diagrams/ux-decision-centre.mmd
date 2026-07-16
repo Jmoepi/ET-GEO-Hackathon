@@ -1,0 +1,59 @@
+---
+title: "VineMind AI — Decision Centre Flow"
+---
+flowchart TB
+    Start(["User clicks Decisions"]) --> FetchRecs["Fetch all recommendations<br/>GET /recommendations<br/>?status=pending&sort=priority"]
+    
+    FetchRecs --> Classify["Classify by action type:<br/>🔴 Irrigate Today<br/>🟡 Monitor Tomorrow<br/>🟢 No Action"]
+    
+    Classify --> RenderQueue["Render Irrigation Queue<br/><br/>Today: 2 blocks<br/>Tomorrow: 1 block<br/>No action: 5 blocks"]
+    
+    RenderQueue --> UserAction{"User Interaction"}
+    
+    UserAction -->|"Click block<br/>in queue"| ShowDetail["Show detail panel<br/>Block overview<br/>Stress breakdown<br/>Recommendation"]
+    ShowDetail --> UserAction2{"User Action"}
+    
+    UserAction2 -->|"Click 'View<br/>Full Details'"| NavigateDetails["Navigate to<br/>Block Details Page"]
+    
+    UserAction2 -->|"Click 'Approve'"| ApproveFlow["Open Confirmation<br/>'Approve irrigation<br/>for Block A?'<br/>Est. volume: 4,500 L"]
+    ApproveFlow --> ConfirmApprove{"Confirmed?"}
+    
+    ConfirmApprove -->|"Yes"| ApproveAPI["POST /recommendations<br/>/{id}/accept"]
+    ApproveAPI --> AuditLog["Log to audit trail<br/>(user, block, timestamp)"]
+    AuditLog --> RemoveFromQueue["Remove from queue<br/>Decrement count"]
+    RemoveFromQueue --> RefreshQueue["Refresh queue"]
+    RefreshQueue --> RenderQueue
+    
+    ConfirmApprove -->|"No"| ShowDetail
+    
+    UserAction -->|"Click 'Dismiss'<br/>on block"| DismissFlow["Show dismiss dialog<br/>Reason: [dropdown]<br/>• Already irrigated<br/>• Not needed<br/>• Other"]
+    DismissFlow --> DismissAPI["POST /recommendations<br/>/{id}/dismiss"]
+    DismissAPI --> RemoveFromQueue
+    
+    UserAction -->|"Click 'Approve All<br/>Today'"| ApproveAll["Open confirmation<br/>'Approve irrigation<br/>for 2 blocks?'<br/>Total: 7,700 L"]
+    ApproveAll --> ConfirmAll{"Confirmed?"}
+    ConfirmAll -->|"Yes"| BatchApprove["Batch approve<br/>POST /recommendations<br/>/batch-accept"]
+    BatchApprove --> AuditLog
+    ConfirmAll -->|"No"| RenderQueue
+    
+    UserAction -->|"Click 'Export<br/>Schedule'"| ExportSchedule["Generate irrigation<br/>schedule PDF/CSV"]
+    ExportSchedule --> Download["Download file"]
+    Download --> UserAction
+    
+    UserAction -->|"Click 'Ask Copilot'"| OpenCopilot["Open AI Copilot<br/>pre-filled:<br/>'Summarise today's<br/>irrigation plan'"]
+
+    classDef start fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    classDef fetch fill:#ECEFF1,stroke:#546E7A,color:#263238
+    classDef render fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef panel fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    classDef action fill:#FFF3E0,stroke:#EF6C00,color:#E65100
+    classDef decision fill:#FFF8E1,stroke:#F9A825,color:#F57F17
+    classDef approve fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+
+    class Start start
+    class FetchRecs fetch
+    class Classify,RenderQueue,RefreshQueue render
+    class ShowDetail,ExportSchedule,Download panel
+    class ApproveFlow,DismissFlow,AuditLog,RemoveFromQueue action
+    class UserAction,UserAction2,ConfirmApprove,ConfirmAll decision
+    class ApproveAPI,BatchApprove approve
