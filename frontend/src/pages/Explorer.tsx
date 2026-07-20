@@ -1,11 +1,15 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useBlocks, useStressScore, useStressHistory, useRecommendation } from "@/hooks/useApi";
+import { useState, useMemo } from "react";
+import { useBlocks, useStressScore, useStressHistory, useRecommendation, useRecommendations } from "@/hooks/useApi";
 import { StressBadge } from "@/components/ui/StressBadge";
-import { MetricCard } from "@/components/ui/MetricCard";
 import { FeatureBreakdown } from "@/components/ui/FeatureBreakdown";
+import { VineyardMap } from "@/components/map/VineyardMap";
 import { stressHex, recommendationLabel, cn } from "@/utils/lib";
-import { Droplets, Thermometer, ArrowLeft, Info } from "lucide-react";
+import { ArrowLeft, MapIcon, List } from "lucide-react";
+
+interface StressMapEntry {
+  stress_score: number;
+  stress_category: string;
+}
 import {
   LineChart,
   Line,
@@ -17,26 +21,72 @@ import {
 } from "recharts";
 
 export function ExplorerPage() {
-  const navigate = useNavigate();
   const { data: blocks } = useBlocks();
+  const { data: stressScores } = useRecommendations();
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
+  const [view, setView] = useState<"map" | "list">("map");
+
+  const stressMap = useMemo(() => {
+    const m = new globalThis.Map<string, StressMapEntry>();
+    stressScores?.forEach((r) => {
+      m.set(r.block_id, { stress_score: r.confidence * 100, stress_category: r.recommendation_type });
+    });
+    return m;
+  }, [stressScores]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary">Vineyard Explorer</h1>
-        <p className="text-text-secondary mt-1">Browse blocks and inspect water stress data</p>
+    <div className="space-y-6 h-[calc(100vh-120px)]">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Vineyard Explorer</h1>
+          <p className="text-text-secondary mt-1">Browse blocks and inspect water stress data</p>
+        </div>
+        {!selectedBlock && (
+          <div className="flex gap-1 bg-surface-card border border-surface-border rounded-lg p-1">
+            <button
+              onClick={() => setView("map")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                view === "map" ? "bg-vineyard-500/15 text-vineyard-500" : "text-text-secondary hover:text-text-primary"
+              )}
+            >
+              <MapIcon className="w-4 h-4" />
+              Map
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                view === "list" ? "bg-vineyard-500/15 text-vineyard-500" : "text-text-secondary hover:text-text-primary"
+              )}
+            >
+              <List className="w-4 h-4" />
+              List
+            </button>
+          </div>
+        )}
       </div>
 
       {!selectedBlock ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {blocks?.map((block) => (
-            <BlockCard key={block.id} block={block} onSelect={() => setSelectedBlock(block.id)} />
-          ))}
-          {(!blocks || blocks.length === 0) && (
-            <p className="text-text-muted col-span-full text-center py-12">No blocks found.</p>
-          )}
-        </div>
+        view === "map" ? (
+          <div className="h-[calc(100%-80px)] rounded-xl overflow-hidden border border-surface-border">
+            <VineyardMap
+              blocks={blocks ?? []}
+              stressMap={stressMap}
+              selectedBlockId={null}
+              onBlockClick={setSelectedBlock}
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {blocks?.map((block) => (
+              <BlockCard key={block.id} block={block} onSelect={() => setSelectedBlock(block.id)} />
+            ))}
+            {(!blocks || blocks.length === 0) && (
+              <p className="text-text-muted col-span-full text-center py-12">No blocks found.</p>
+            )}
+          </div>
+        )
       ) : (
         <BlockDetail blockId={selectedBlock} onBack={() => setSelectedBlock(null)} />
       )}
@@ -50,11 +100,7 @@ function BlockCard({ block, onSelect }: { block: { id: string; name: string; cul
   return (
     <button
       onClick={onSelect}
-      className={cn(
-        "text-left bg-surface-card rounded-xl border p-4 transition-all cursor-pointer",
-        "hover:bg-surface-hover",
-        stress ? "border-surface-border" : "border-surface-border"
-      )}
+      className="text-left bg-surface-card rounded-xl border border-surface-border p-4 transition-all cursor-pointer hover:bg-surface-hover"
     >
       <div className="flex items-start justify-between mb-3">
         <div>
@@ -63,9 +109,7 @@ function BlockCard({ block, onSelect }: { block: { id: string; name: string; cul
         </div>
         {stress && <StressBadge score={stress.stress_score} size="sm" />}
       </div>
-      {block.area_ha && (
-        <p className="text-xs text-text-muted">{block.area_ha} ha</p>
-      )}
+      {block.area_ha && <p className="text-xs text-text-muted">{block.area_ha} ha</p>}
     </button>
   );
 }

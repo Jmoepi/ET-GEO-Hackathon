@@ -1,9 +1,10 @@
 """
 Seed script to populate the database with demo data for hackathon presentations.
+Usage: python -m seed
 """
 import asyncio
+import uuid
 from datetime import date, timedelta
-from uuid import uuid4
 from app.database import AsyncSessionLocal, engine, Base
 from app.core.security import hash_password
 from app.models import User, Vineyard, Block, Observation
@@ -14,7 +15,7 @@ async def seed():
         await conn.run_sync(Base.metadata.create_all)
 
     async with AsyncSessionLocal() as db:
-        admin_id = uuid4()
+        admin_id = uuid.uuid4()
         admin = User(
             id=admin_id,
             name="Jeffrey Moepi",
@@ -24,7 +25,7 @@ async def seed():
         )
         db.add(admin)
 
-        vineyard_id = uuid4()
+        vineyard_id = uuid.uuid4()
         vineyard = Vineyard(
             id=vineyard_id,
             name="Stellenbosch Estate",
@@ -45,7 +46,7 @@ async def seed():
 
         block_ids = []
         for bd in blocks_data:
-            block_id = uuid4()
+            block_id = uuid.uuid4()
             block_ids.append(block_id)
             block = Block(
                 id=block_id,

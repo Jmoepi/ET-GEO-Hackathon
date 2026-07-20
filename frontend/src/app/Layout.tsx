@@ -1,15 +1,15 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/lib";
-import { useUIStore } from "@/state/store";
+import { useUIStore, useAuthStore } from "@/state/store";
 import {
   LayoutDashboard,
   Map,
-  Layers,
   ListChecks,
   Bot,
   ChevronLeft,
   ChevronRight,
   Sprout,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -21,6 +21,13 @@ const navItems = [
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUIStore();
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <aside
@@ -59,6 +66,21 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {sidebarOpen && user && (
+        <div className="px-3 py-3 border-t border-surface-border">
+          <p className="text-sm text-text-primary font-medium truncate">{user.name}</p>
+          <p className="text-xs text-text-muted truncate">{user.email}</p>
+        </div>
+      )}
+
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-3 px-3 h-12 border-t border-surface-border text-text-muted hover:text-stress-high hover:bg-surface-hover transition-colors"
+      >
+        <LogOut className="w-5 h-5 shrink-0" />
+        {sidebarOpen && <span className="text-sm font-medium">Sign Out</span>}
+      </button>
 
       <button
         onClick={toggleSidebar}

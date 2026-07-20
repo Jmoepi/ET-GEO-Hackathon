@@ -1,11 +1,65 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.database import get_db
 from app.core.dependencies import get_current_user
 from app.schemas import CopilotChatRequest, CopilotChatResponse
-from app.models import User
+from app.models import User, Block, StressScore, Recommendation, DecisionEvidence
+from app.services.copilot_service import chat_with_copilot
 
 router = APIRouter(prefix="/copilot", tags=["AI Copilot"])
+
+
+async def _build_context(db: AsyncSession) -> str:
+    blocks_result = await db.execute(select(Block).limit(20))
+    blocks = list(blocks_result.scalars().all())
+
+    if not blocks:
+        return "No vineyard blocks are currently configured."
+
+    context_parts = ["Vineyard blocks and their current status:"]
+
+    for block in blocks[:10]:
+        stress_result = await db.execute(
+            select(StressScore)
+            .where(StressScore.block_id == block.id)
+            .order_by(StressScore.generated_at.desc())
+            .limit(1)
+        )
+        stress = stress_result.scalar_one_or_none()
+
+        rec_result = await db.execute(
+            select(Recommendation)
+            .where(Recommendation.block_id == block.id)
+            .order_by(Recommendation.generated_at.desc())
+            .limit(1)
+        )
+        rec = rec_result.scalar_one_or_none()
+
+        block_info = f"\n- {block.name}"
+        if block.cultivar:
+            block_info += f" ({block.cultivar})"
+        if block.area_ha:
+            block_info += f", {block.area_ha}ha"
+
+        if stress:
+            block_info += f"\n  Stress Score: {stress.stress_score}/100 ({stress.stress_category})"
+            block_info += f", Confidence: {stress.confidence * 100:.0f}%"
+            block_info += f", Model: {stress.model_version}"
+
+            if stress.contributors:
+                top = sorted(stress.contributors, key=lambda c: c.get("weighted_score", 0), reverse=True)[:3]
+                factors = [f"{c.get('metric', 'unknown')}={c.get('raw_value', 0):.2f}" for c in top if c.get("available", True)]
+                if factors:
+                    block_info += f"\n  Top factors: {', '.join(factors)}"
+
+        if rec:
+            block_info += f"\n  Recommendation: {rec.recommendation_type.replace('_', ' ').title()}"
+            block_info += f" (confidence: {rec.confidence * 100:.0f}%)"
+
+        context_parts.append(block_info)
+
+    return "\n".join(context_parts)
 
 
 @router.post("/chat", response_model=CopilotChatResponse)
@@ -20,25 +74,7 @@ async def copilot_chat(
             detail="Message cannot be empty",
         )
 
-    message_lower = request.message.lower()
+    context = await _build_context(db)
+    answer = await chat_with_copilot(request.message, context_data=context)
 
-    if any(kw in message_lower for kw in ["why", "explain", "reason", "because"]):
-        return CopilotChatResponse(
-            answer="I can explain irrigation recommendations using the Decision Evidence Package. Each recommendation includes the contributing factors (water deficit, ET ratio, soil moisture, NDVI trend, rainfall forecast, and phenology stage) with their weights and normalised values. Please select a specific vineyard block on the dashboard to see its detailed evidence.",
-            decision_id=None,
-        )
-    elif any(kw in message_lower for kw in ["compare", "difference", "which"]):
-        return CopilotChatResponse(
-            answer="To compare vineyard blocks, please use the Decision Centre on the dashboard. It ranks all blocks by water stress score and allows side-by-side comparison of their environmental indicators and recommendations.",
-            decision_id=None,
-        )
-    elif any(kw in message_lower for kw in ["trend", "history", "over time"]):
-        return CopilotChatResponse(
-            answer="Historical stress trends are available on each block's detail page. The dashboard shows 30-day stress score history, NDVI trends, and soil moisture changes. Data is append-only and fully auditable.",
-            decision_id=None,
-        )
-    else:
-        return CopilotChatResponse(
-            answer="I can help you understand vineyard irrigation data. Try asking:\n- 'Why should I irrigate Block A12?'\n- 'What are the stress trends?'\n- 'Compare blocks A12 and B05'\n- 'Explain the current recommendation'\n\nI only explain data from the Decision Intelligence Engine — I never generate irrigation advice myself.",
-            decision_id=None,
-        )
+    return CopilotChatResponse(answer=answer, decision_id=None)
