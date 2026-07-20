@@ -19,38 +19,14 @@ export function LoginPage() {
 
     try {
       const res = await api.auth.login(email, password);
-      const user = await api.auth.me.call(null);
+      localStorage.setItem("vinemind_token", res.access_token);
+      const user = await api.auth.me();
       login(res.access_token, user);
       navigate("/");
     } catch (err: any) {
-      // Token is set by login() but me() failed — try fetching me with the token
-      try {
-        const tokenRes = await fetch("/api/v1/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-        if (!tokenRes.ok) {
-          setError("Invalid email or password");
-          setLoading(false);
-          return;
-        }
-        const { access_token } = await tokenRes.json();
-        localStorage.setItem("vinemind_token", access_token);
-        const meRes = await fetch("/api/v1/auth/me", {
-          headers: { Authorization: `Bearer ${access_token}` },
-        });
-        if (!meRes.ok) {
-          setError("Login succeeded but failed to load profile");
-          setLoading(false);
-          return;
-        }
-        const user = await meRes.json();
-        login(access_token, user);
-        navigate("/");
-      } catch {
-        setError("Invalid email or password");
-      }
+      localStorage.removeItem("vinemind_token");
+      setError(err?.message || "Invalid email or password");
+    } finally {
       setLoading(false);
     }
   };
